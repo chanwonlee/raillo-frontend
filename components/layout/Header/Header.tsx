@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  Train,
   ShoppingCart,
   User,
   Menu,
@@ -18,6 +17,7 @@ import {
 import { tokenManager } from "@/lib/auth";
 import HeaderAuthBtn from "../Header/HeaderAuthBtn";
 import Breadcrumb from "./Breadcrumb";
+import Logo from "./Logo";
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -40,10 +40,7 @@ export default function Header() {
         <div className="flex items-center">
           {/* 왼쪽: 로고와 브레드크럼 */}
           <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center space-x-2">
-              <Train className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-blue-600">RAIL-O</h1>
-            </Link>
+            <Logo />
             <Breadcrumb />
           </div>
 
