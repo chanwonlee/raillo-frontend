@@ -16,8 +16,7 @@ import {
 } from "lucide-react";
 import { tokenManager } from "@/lib/auth";
 import HeaderAuthBtn from "../Header/HeaderAuthBtn";
-import Breadcrumb from "./Breadcrumb";
-import Logo from "./Logo";
+import HeaderBrand from "./HeaderBrand";
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -39,10 +38,7 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center">
           {/* 왼쪽: 로고와 브레드크럼 */}
-          <div className="flex items-center space-x-4">
-            <Logo />
-            <Breadcrumb />
-          </div>
+          <HeaderBrand />
 
           {/* 오른쪽: 네비게이션과 카테고리 버튼 */}
           <div className="flex items-center space-x-4 ml-auto">
