@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { CreditCard, Ticket, Search, LucideIcon } from "lucide-react";
+import { CreditCard, Ticket, Search, LucideIcon, MapPin } from "lucide-react";
 import { ReactNode } from "react";
 
 type SidebarBtnType =
   | "ticket-purchased"
   | "ticket-booking"
-  | "ticket-reservations";
+  | "ticket-reservations"
+  | "landmark-search";
 
 interface SidebarBtnConfig {
   href: string;
@@ -32,6 +33,12 @@ const SIDEBAR_BTN_CONFIG: Record<SidebarBtnType, SidebarBtnConfig> = {
     icon: Search,
     iconColor: "text-orange-600",
     label: "예약 승차권 조회",
+  },
+  "landmark-search": {
+    href: "/landmarks",
+    icon: MapPin,
+    iconColor: "text-emerald-600",
+    label: "랜드마크 찾기",
   },
 };
 
