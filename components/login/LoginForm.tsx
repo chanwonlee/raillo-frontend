@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -87,125 +89,141 @@ const LoginForm = () => {
   const redirectTo = searchParams.get("redirectTo");
   const redirectMessage = redirectTo ? "로그인이 필요한 서비스입니다." : null;
   return (
-    <Card className="bg-white shadow-lg">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold text-gray-900">
-          로그인
-        </CardTitle>
-        <CardDescription className="text-gray-600">
-          회원번호로 로그인하세요
-        </CardDescription>
-        {redirectMessage && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">{redirectMessage}</p>
-          </div>
-        )}
-      </CardHeader>
-      <CardContent>
-        {/* 회원번호 로그인 */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label
-              htmlFor="memberNumber"
-              className="text-sm font-medium text-gray-700"
-            >
-              회원번호
-            </Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                id="memberNumber"
-                type="text"
-                placeholder="회원번호를 입력하세요"
-                value={memberNumber}
-                onChange={(e) => setMemberNumber(e.target.value)}
-                className="pl-10"
-                disabled={isLoading}
-              />
+    <>
+      <Card className="bg-white shadow-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            로그인
+          </CardTitle>
+          <CardDescription className="text-gray-600">
+            회원번호로 로그인하세요
+          </CardDescription>
+          {redirectMessage && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">{redirectMessage}</p>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label
-              htmlFor="password"
-              className="text-sm font-medium text-gray-700"
-            >
-              비밀번호
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="비밀번호를 입력하세요"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10"
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                disabled={isLoading}
+          )}
+        </CardHeader>
+        <CardContent>
+          {/* 회원번호 로그인 */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label
+                htmlFor="memberNumber"
+                className="text-sm font-medium text-gray-700"
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+                회원번호
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="memberNumber"
+                  type="text"
+                  placeholder="회원번호를 입력하세요"
+                  value={memberNumber}
+                  onChange={(e) => setMemberNumber(e.target.value)}
+                  className="pl-10"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="password"
+                className="text-sm font-medium text-gray-700"
+              >
+                비밀번호
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="비밀번호를 입력하세요"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleMemberLogin}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  로그인 중...
+                </div>
+              ) : (
+                "로그인"
+              )}
+            </Button>
+          </div>
+
+          {/* 찾기 및 회원가입 링크 */}
+          <div className="mt-6">
+            <div className="flex justify-center space-x-4 text-sm">
+              <Link
+                href="/find-account?tab=member"
+                className="text-gray-600 hover:text-blue-600"
+              >
+                회원번호 찾기
+              </Link>
+              <span className="text-gray-300">|</span>
+              <Link
+                href="/find-account?tab=password"
+                className="text-gray-600 hover:text-blue-600"
+              >
+                비밀번호 찾기
+              </Link>
+              <span className="text-gray-300">|</span>
+              <Link
+                href="/signup"
+                className="text-gray-600 hover:text-blue-600"
+              >
+                회원가입
+              </Link>
             </div>
           </div>
 
-          <Button
-            onClick={handleMemberLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
-            size="lg"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                로그인 중...
-              </div>
-            ) : (
-              "로그인"
-            )}
-          </Button>
-        </div>
-
-        {/* 찾기 및 회원가입 링크 */}
-        <div className="mt-6">
-          <div className="flex justify-center space-x-4 text-sm">
-            <Link
-              href="/find-account?tab=member"
-              className="text-gray-600 hover:text-blue-600"
-            >
-              회원번호 찾기
-            </Link>
-            <span className="text-gray-300">|</span>
-            <Link
-              href="/find-account?tab=password"
-              className="text-gray-600 hover:text-blue-600"
-            >
-              비밀번호 찾기
-            </Link>
-            <span className="text-gray-300">|</span>
-            <Link href="/signup" className="text-gray-600 hover:text-blue-600">
-              회원가입
-            </Link>
+          {/* 추가 안내 */}
+          <div className="text-center text-xs text-gray-500 mt-6">
+            <p>
+              로그인 시 RAIL-O의 이용약관 및 개인정보처리방침에 동의하게 됩니다.
+            </p>
           </div>
-        </div>
-
-        {/* 추가 안내 */}
-        <div className="text-center text-xs text-gray-500 mt-6">
-          <p>
-            로그인 시 RAIL-O의 이용약관 및 개인정보처리방침에 동의하게 됩니다.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      <div className="mt-6 text-center">
+        <p className="text-sm text-gray-600">
+          아직 RAIL-O 회원이 아니신가요?{" "}
+          <Link
+            href="/signup"
+            className="text-blue-600 hover:text-blue-700 font-semibold"
+          >
+            회원가입하기
+          </Link>
+        </p>
+      </div>
+    </>
   );
 };
 
