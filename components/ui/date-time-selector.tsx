@@ -1,12 +1,25 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { format, addMonths, startOfDay, isBefore, isSameDay, parseISO } from "date-fns"
-import { ko } from "date-fns/locale"
-import { CalendarIcon, X, ChevronLeft, ChevronRight, Clock } from "lucide-react"
-import { trainAPI, CalendarInfo } from "@/lib/api/train"
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  format,
+  addMonths,
+  startOfDay,
+  isBefore,
+  isSameDay,
+  parseISO,
+} from "date-fns";
+import { ko } from "date-fns/locale";
+import {
+  CalendarIcon,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+} from "lucide-react";
+import { trainAPI, CalendarInfo } from "@/lib/api/train";
 
 // 전역 캐시 (모든 DateTimeSelector 인스턴스가 공유)
 let globalCalendarCache: {
@@ -18,46 +31,56 @@ let globalCalendarCache: {
   data: [],
   timestamp: 0,
   loading: false,
-  promise: null
+  promise: null,
 };
 
 // 캐시 유효 시간 (5분)
 const CACHE_DURATION = 5 * 60 * 1000;
 
 interface DateTimeSelectorProps {
-  value: Date | undefined
-  onValueChange: (date: Date) => void
-  placeholder: string
-  label: string
-  variant?: "blue" | "white"
+  value: Date | undefined;
+  onValueChange: (date: Date) => void;
+  placeholder: string;
+  label: string;
+  variant?: "blue" | "white";
 }
 
-export function DateTimeSelector({ value, onValueChange, placeholder, label, variant = "blue" }: DateTimeSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [tempDate, setTempDate] = useState<Date>(value || new Date())
+export function DateTimeSelector({
+  value,
+  onValueChange,
+  placeholder,
+  label,
+  variant = "blue",
+}: DateTimeSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tempDate, setTempDate] = useState<Date>(value || new Date());
   const [selectedHour, setSelectedHour] = useState<string>(
-    value ? value.getHours().toString().padStart(2, '0') + '시' : new Date().getHours().toString().padStart(2, '0') + '시'
-  )
-  const [calendarData, setCalendarData] = useState<CalendarInfo[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+    value
+      ? value.getHours().toString().padStart(2, "0") + "시"
+      : new Date().getHours().toString().padStart(2, "0") + "시"
+  );
+  const [calendarData, setCalendarData] = useState<CalendarInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // 오늘 날짜 (시간 제외)
-  const today = startOfDay(new Date())
-  
+  const today = startOfDay(new Date());
+
   // API에서 가져온 최대 날짜 (운행 가능한 마지막 날짜)
   const maxAvailableDate = useMemo(() => {
-    return calendarData.length > 0 
+    return calendarData.length > 0
       ? parseISO(calendarData[calendarData.length - 1].operationDate)
-      : addMonths(today, 1) // 기본값으로 한 달 후
-  }, [calendarData, today])
+      : addMonths(today, 1); // 기본값으로 한 달 후
+  }, [calendarData, today]);
 
   // 운행 캘린더 데이터 로드 (캐싱 적용)
   useEffect(() => {
     const loadCalendar = async () => {
       // 캐시가 유효하면 캐시된 데이터 사용
       const now = Date.now();
-      if (globalCalendarCache.data.length > 0 && 
-          (now - globalCalendarCache.timestamp) < CACHE_DURATION) {
+      if (
+        globalCalendarCache.data.length > 0 &&
+        now - globalCalendarCache.timestamp < CACHE_DURATION
+      ) {
         setCalendarData(globalCalendarCache.data);
         return;
       }
@@ -68,7 +91,7 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
           const data = await globalCalendarCache.promise;
           setCalendarData(data);
         } catch (error) {
-          console.error('운행 캘린더 로드 실패:', error);
+          console.error("운행 캘린더 로드 실패:", error);
         }
         return;
       }
@@ -76,7 +99,7 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
       // 새로운 로딩 시작
       setIsLoading(true);
       globalCalendarCache.loading = true;
-      
+
       const loadPromise = (async () => {
         try {
           const response = await trainAPI.getCalendar();
@@ -88,7 +111,7 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
           }
           return [];
         } catch (error) {
-          console.error('운행 캘린더 로드 실패:', error);
+          console.error("운행 캘린더 로드 실패:", error);
           return [];
         } finally {
           globalCalendarCache.loading = false;
@@ -104,85 +127,109 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
   }, []);
 
   // 시간 옵션 (00시 ~ 23시)
-  const hourOptions = Array.from({ length: 24 }, (_, i) => 
-    i.toString().padStart(2, '0') + '시'
-  )
+  const hourOptions = Array.from(
+    { length: 24 },
+    (_, i) => i.toString().padStart(2, "0") + "시"
+  );
 
   // 현재 시간이 선택된 날짜의 과거인지 확인
   const isPastTime = useCallback((date: Date, hour: string) => {
-    const selectedDateTime = new Date(date)
-    selectedDateTime.setHours(parseInt(hour), 0, 0, 0)
-    const now = new Date()
+    const selectedDateTime = new Date(date);
+    selectedDateTime.setHours(parseInt(hour), 0, 0, 0);
+    const now = new Date();
     // '지금 시간'은 선택 가능하게 (같은 시각은 true)
-    const nowHourDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0, 0)
-    return selectedDateTime < nowHourDate
-  }, [])
+    const nowHourDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      now.getHours(),
+      0,
+      0,
+      0
+    );
+    return selectedDateTime < nowHourDate;
+  }, []);
 
   // 날짜 선택 가능 여부 확인
-  const isDateSelectable = useCallback((date: Date) => {
-    // 오늘 이후이고 최대 운행 가능 날짜 이전인지 확인
-    const isInRange = !isBefore(date, today) && !isBefore(maxAvailableDate, date)
-    
-    // API 데이터가 있으면 해당 날짜가 운행 가능한지도 확인
-    if (calendarData.length > 0) {
-      const dateStr = format(date, 'yyyy-MM-dd')
-      const calendarItem = calendarData.find(item => item.operationDate === dateStr)
-      return isInRange && calendarItem?.isBookingAvailable === 'Y'
-    }
-    
-    return isInRange
-  }, [calendarData, today, maxAvailableDate])
+  const isDateSelectable = useCallback(
+    (date: Date) => {
+      // 오늘 이후이고 최대 운행 가능 날짜 이전인지 확인
+      const isInRange =
+        !isBefore(date, today) && !isBefore(maxAvailableDate, date);
+
+      // API 데이터가 있으면 해당 날짜가 운행 가능한지도 확인
+      if (calendarData.length > 0) {
+        const dateStr = format(date, "yyyy-MM-dd");
+        const calendarItem = calendarData.find(
+          (item) => item.operationDate === dateStr
+        );
+        return isInRange && calendarItem?.isBookingAvailable === "Y";
+      }
+
+      return isInRange;
+    },
+    [calendarData, today, maxAvailableDate]
+  );
 
   // 시간 선택 가능 여부 확인
-  const isHourSelectable = useCallback((hour: string) => {
-    if (isSameDay(tempDate, today)) {
-      return !isPastTime(tempDate, hour)
-    }
-    return true
-  }, [tempDate, today, isPastTime])
+  const isHourSelectable = useCallback(
+    (hour: string) => {
+      if (isSameDay(tempDate, today)) {
+        return !isPastTime(tempDate, hour);
+      }
+      return true;
+    },
+    [tempDate, today, isPastTime]
+  );
 
   // 달력 그리드 생성
   const generateCalendarDays = () => {
-    const year = tempDate.getFullYear()
-    const month = tempDate.getMonth()
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const startDate = new Date(firstDay)
-    startDate.setDate(startDate.getDate() - firstDay.getDay())
+    const year = tempDate.getFullYear();
+    const month = tempDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
 
-    const days = []
+    const days = [];
 
     for (let i = 0; i < 42; i++) {
-      const currentDate = new Date(startDate)
-      currentDate.setDate(startDate.getDate() + i)
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
 
-      const isCurrentMonth = currentDate.getMonth() === month
-      const isToday = isSameDay(currentDate, today)
-      const isSelected = isSameDay(currentDate, tempDate)
-      const isSelectable = isDateSelectable(currentDate)
-      const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6
-      
+      const isCurrentMonth = currentDate.getMonth() === month;
+      const isToday = isSameDay(currentDate, today);
+      const isSelected = isSameDay(currentDate, tempDate);
+      const isSelectable = isDateSelectable(currentDate);
+      const isWeekend =
+        currentDate.getDay() === 0 || currentDate.getDay() === 6;
+
       // API 데이터에서 해당 날짜의 정보 가져오기
-      const dateStr = format(currentDate, 'yyyy-MM-dd')
-      const calendarItem = calendarData.find(item => item.operationDate === dateStr)
-      const isHoliday = calendarItem?.isHoliday === 'Y'
-      const isBookingAvailable = calendarItem?.isBookingAvailable === 'Y'
+      const dateStr = format(currentDate, "yyyy-MM-dd");
+      const calendarItem = calendarData.find(
+        (item) => item.operationDate === dateStr
+      );
+      const isHoliday = calendarItem?.isHoliday === "Y";
+      const isBookingAvailable = calendarItem?.isBookingAvailable === "Y";
 
       days.push(
         <button
           key={i}
           onClick={() => {
             if (isSelectable && isCurrentMonth) {
-              setTempDate(new Date(currentDate))
+              setTempDate(new Date(currentDate));
               // 오늘 날짜 선택 시 현재 시간으로, 다른 날짜 선택 시 00시로 설정
-              const now = new Date()
-              const isToday = currentDate.getDate() === now.getDate() && 
-                             currentDate.getMonth() === now.getMonth() && 
-                             currentDate.getFullYear() === now.getFullYear()
+              const now = new Date();
+              const isToday =
+                currentDate.getDate() === now.getDate() &&
+                currentDate.getMonth() === now.getMonth() &&
+                currentDate.getFullYear() === now.getFullYear();
               if (isToday) {
-                setSelectedHour(now.getHours().toString().padStart(2, '0') + '시')
+                setSelectedHour(
+                  now.getHours().toString().padStart(2, "0") + "시"
+                );
               } else {
-                setSelectedHour('00시')
+                setSelectedHour("00시");
               }
             }
           }}
@@ -195,14 +242,14 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
                   ? isSelected
                     ? "bg-blue-600 text-white font-semibold"
                     : isToday
-                      ? "bg-blue-100 text-blue-600 font-semibold hover:bg-blue-200"
-                      : isHoliday
-                        ? "text-red-500 hover:bg-red-50"
-                        : isWeekend
-                          ? currentDate.getDay() === 0
-                            ? "text-red-500 hover:bg-red-50"
-                            : "text-blue-500 hover:bg-blue-50"
-                          : "text-gray-900 hover:bg-gray-100"
+                    ? "bg-blue-100 text-blue-600 font-semibold hover:bg-blue-200"
+                    : isHoliday
+                    ? "text-red-500 hover:bg-red-50"
+                    : isWeekend
+                    ? currentDate.getDay() === 0
+                      ? "text-red-500 hover:bg-red-50"
+                      : "text-blue-500 hover:bg-blue-50"
+                    : "text-gray-900 hover:bg-gray-100"
                   : "text-gray-300 cursor-not-allowed"
                 : "text-gray-300"
             }
@@ -213,71 +260,81 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           )}
         </button>
-      )
+      );
     }
 
-    return days
-  }
+    return days;
+  };
 
   const handleApply = () => {
-    const selectedDateTime = new Date(tempDate)
-    selectedDateTime.setHours(parseInt(selectedHour), 0, 0, 0)
-    onValueChange(selectedDateTime)
-    setIsOpen(false)
-  }
+    const selectedDateTime = new Date(tempDate);
+    selectedDateTime.setHours(parseInt(selectedHour), 0, 0, 0);
+    onValueChange(selectedDateTime);
+    setIsOpen(false);
+  };
 
   const handleClose = () => {
-    setIsOpen(false)
+    setIsOpen(false);
     // 원래 값으로 복원
-    setTempDate(value || new Date())
+    setTempDate(value || new Date());
     setSelectedHour(
-      value ? value.getHours().toString().padStart(2, '0') + '시' : new Date().getHours().toString().padStart(2, '0') + '시'
-    )
-  }
+      value
+        ? value.getHours().toString().padStart(2, "0") + "시"
+        : new Date().getHours().toString().padStart(2, "0") + "시"
+    );
+  };
 
-  const hourRefs = useRef<(HTMLButtonElement | null)[]>([])
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const hourRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
-        const idx = hourOptions.findIndex((h) => h === selectedHour)
-        const btn = hourRefs.current[idx]
-        const container = scrollContainerRef.current
+        const idx = hourOptions.findIndex((h) => h === selectedHour);
+        const btn = hourRefs.current[idx];
+        const container = scrollContainerRef.current;
         if (btn && container) {
-          const left = btn.offsetLeft - container.offsetWidth / 2 + btn.offsetWidth / 2
-          container.scrollTo({ left })
+          const left =
+            btn.offsetLeft - container.offsetWidth / 2 + btn.offsetWidth / 2;
+          container.scrollTo({ left });
         }
-      }, 0)
+      }, 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen])
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
-      const idx = hourOptions.findIndex((h) => h === selectedHour)
-      const btn = hourRefs.current[idx]
-      const container = scrollContainerRef.current
+      const idx = hourOptions.findIndex((h) => h === selectedHour);
+      const btn = hourRefs.current[idx];
+      const container = scrollContainerRef.current;
       if (btn && container) {
-        const left = btn.offsetLeft - container.offsetWidth / 2 + btn.offsetWidth / 2
-        container.scrollTo({ left })
+        const left =
+          btn.offsetLeft - container.offsetWidth / 2 + btn.offsetWidth / 2;
+        container.scrollTo({ left });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedHour])
+  }, [selectedHour]);
 
   // value가 변경될 때 tempDate 초기화
   useEffect(() => {
     if (value) {
-      setTempDate(value)
-      setSelectedHour(value.getHours().toString().padStart(2, '0') + '시')
+      setTempDate(value);
+      setSelectedHour(value.getHours().toString().padStart(2, "0") + "시");
     }
-  }, [value])
+  }, [value]);
 
   return (
     <>
       <div>
-        <label className={`block text-sm font-medium mb-2 ${variant === "blue" ? "text-white" : "text-gray-700"}`}>{label}</label>
+        <label
+          className={`block text-sm font-medium mb-2 ${
+            variant === "blue" ? "text-white" : "text-gray-700"
+          }`}
+        >
+          {label}
+        </label>
         <Button
           variant="outline"
           className="w-full justify-start text-left font-normal bg-white text-gray-900 hover:bg-gray-50"
@@ -322,48 +379,71 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
                 <button
                   className="p-2 hover:bg-gray-100 rounded disabled:opacity-50"
                   onClick={() => {
-                    const prevMonth = new Date(tempDate.getFullYear(), tempDate.getMonth() - 1, 1)
-                    setTempDate(prevMonth)
+                    const prevMonth = new Date(
+                      tempDate.getFullYear(),
+                      tempDate.getMonth() - 1,
+                      1
+                    );
+                    setTempDate(prevMonth);
                     // 월 변경 시 오늘 날짜면 현재 시간으로, 아니면 00시로 설정
-                    const now = new Date()
-                    const isToday = prevMonth.getDate() === now.getDate() && 
-                                   prevMonth.getMonth() === now.getMonth() && 
-                                   prevMonth.getFullYear() === now.getFullYear()
+                    const now = new Date();
+                    const isToday =
+                      prevMonth.getDate() === now.getDate() &&
+                      prevMonth.getMonth() === now.getMonth() &&
+                      prevMonth.getFullYear() === now.getFullYear();
                     if (isToday) {
-                      setSelectedHour(now.getHours().toString().padStart(2, '0') + '시')
+                      setSelectedHour(
+                        now.getHours().toString().padStart(2, "0") + "시"
+                      );
                     } else {
-                      setSelectedHour('00시')
+                      setSelectedHour("00시");
                     }
                   }}
-                  disabled={tempDate.getMonth() === today.getMonth() && tempDate.getFullYear() === today.getFullYear()}
+                  disabled={
+                    tempDate.getMonth() === today.getMonth() &&
+                    tempDate.getFullYear() === today.getFullYear()
+                  }
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <div className="text-center">
-                  <h3 className="text-lg font-bold">{format(tempDate, "yyyy. MM.", { locale: ko })}</h3>
+                  <h3 className="text-lg font-bold">
+                    {format(tempDate, "yyyy. MM.", { locale: ko })}
+                  </h3>
                   {!isLoading && calendarData.length > 0 && (
                     <p className="text-xs text-gray-500 mt-1">
-                      예약 가능: {format(today, "MM/dd")} ~ {format(maxAvailableDate, "MM/dd")}
+                      예약 가능: {format(today, "MM/dd")} ~{" "}
+                      {format(maxAvailableDate, "MM/dd")}
                     </p>
                   )}
                 </div>
                 <button
                   className="p-2 hover:bg-gray-100 rounded disabled:opacity-50"
                   onClick={() => {
-                    const nextMonth = new Date(tempDate.getFullYear(), tempDate.getMonth() + 1, 1)
-                    setTempDate(nextMonth)
+                    const nextMonth = new Date(
+                      tempDate.getFullYear(),
+                      tempDate.getMonth() + 1,
+                      1
+                    );
+                    setTempDate(nextMonth);
                     // 월 변경 시 오늘 날짜면 현재 시간으로, 아니면 00시로 설정
-                    const now = new Date()
-                    const isToday = nextMonth.getDate() === now.getDate() && 
-                                   nextMonth.getMonth() === now.getMonth() && 
-                                   nextMonth.getFullYear() === now.getFullYear()
+                    const now = new Date();
+                    const isToday =
+                      nextMonth.getDate() === now.getDate() &&
+                      nextMonth.getMonth() === now.getMonth() &&
+                      nextMonth.getFullYear() === now.getFullYear();
                     if (isToday) {
-                      setSelectedHour(now.getHours().toString().padStart(2, '0') + '시')
+                      setSelectedHour(
+                        now.getHours().toString().padStart(2, "0") + "시"
+                      );
                     } else {
-                      setSelectedHour('00시')
+                      setSelectedHour("00시");
                     }
                   }}
-                  disabled={isBefore(maxAvailableDate, new Date(tempDate.getFullYear(), tempDate.getMonth() + 1, 1))}
+                  disabled={isBefore(
+                    maxAvailableDate,
+                    new Date(tempDate.getFullYear(), tempDate.getMonth() + 1, 1)
+                  )}
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -371,16 +451,22 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
 
               {/* 요일 헤더 */}
               <div className="grid grid-cols-7 bg-gray-50">
-                {["일", "월", "화", "수", "목", "금", "토"].map((day, index) => (
-                  <div
-                    key={day}
-                    className={`p-2 text-center text-sm font-medium h-9 flex items-center justify-center ${
-                      index === 0 ? "text-red-500" : index === 6 ? "text-blue-500" : "text-gray-700"
-                    }`}
-                  >
-                    {day}
-                  </div>
-                ))}
+                {["일", "월", "화", "수", "목", "금", "토"].map(
+                  (day, index) => (
+                    <div
+                      key={day}
+                      className={`p-2 text-center text-sm font-medium h-9 flex items-center justify-center ${
+                        index === 0
+                          ? "text-red-500"
+                          : index === 6
+                          ? "text-blue-500"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {day}
+                    </div>
+                  )
+                )}
               </div>
 
               {/* 달력 그리드 */}
@@ -397,17 +483,21 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
                   {hourOptions.map((hour, idx) => (
                     <Button
                       key={hour}
-                      ref={el => { hourRefs.current[idx] = el }}
+                      ref={(el) => {
+                        hourRefs.current[idx] = el;
+                      }}
                       variant={selectedHour === hour ? "default" : "outline"}
                       size="sm"
                       className={`text-sm py-1 px-2 h-8 min-w-[50px] ${
                         selectedHour === hour ? "bg-blue-600" : ""
                       } ${
-                        !isHourSelectable(hour) ? "opacity-50 cursor-not-allowed" : ""
+                        !isHourSelectable(hour)
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
                       }`}
                       onClick={() => {
                         if (isHourSelectable(hour)) {
-                          setSelectedHour(hour)
+                          setSelectedHour(hour);
                         }
                       }}
                       disabled={!isHourSelectable(hour)}
@@ -421,7 +511,11 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
           </div>
 
           <div className="flex border-t p-4 bg-white">
-            <Button variant="outline" onClick={handleClose} className="flex-1 mr-2">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              className="flex-1 mr-2"
+            >
               취소
             </Button>
             <Button
@@ -434,5 +528,5 @@ export function DateTimeSelector({ value, onValueChange, placeholder, label, var
         </DialogContent>
       </Dialog>
     </>
-  )
-} 
+  );
+}

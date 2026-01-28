@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Header from '@/components/layout/Header/Header'
 import Footer from '@/components/layout/Footer'
+import { QueryProvider } from '@/components/providers/QueryProvider'
 
 export const metadata: Metadata = {
   title: 'Raillo',
@@ -17,11 +18,13 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
-        <div className='min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col' >
-          <Header />
-          <main className='flex-1'>{children}</main>
-          <Footer />
-        </div>
+        <QueryProvider>
+          <div className='min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col' >
+            <Header />
+            <main className='flex-1'>{children}</main>
+            <Footer />
+          </div>
+        </QueryProvider>
       </body>
     </html >
   )

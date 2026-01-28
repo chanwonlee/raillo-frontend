@@ -1,11 +1,16 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { loadPaymentWidget, PaymentWidgetInstance } from "@tosspayments/payment-widget-sdk";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,9 +20,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { format, addMinutes } from "date-fns"
-import { ko } from "date-fns/locale"
+} from "@/components/ui/alert-dialog";
+import { format, addMinutes } from "date-fns";
+import { ko } from "date-fns/locale";
 import {
   Clock,
   MapPin,
@@ -27,195 +32,265 @@ import {
   ChevronUp,
   ChevronDown,
   CheckCircle,
-} from "lucide-react"
-import Header from "@/components/layout/Header/Header"
-import Footer from "@/components/layout/Footer"
-import { deleteReservation, getReservationDetail, addToCart } from '@/lib/api/booking'
-import { handleError } from '@/lib/utils/errorHandler'
-
-interface ReservationDetail {
-  reservationId: number;
-  reservationCode: string;
-  trainNumber: string;
-  trainName: string;
-  departureStationName: string;
-  arrivalStationName: string;
-  departureTime: string;
-  arrivalTime: string;
-  operationDate: string;
-  expiresAt: string;
-  fare: number;
-  seats: {
-    seatReservationId: number;
-    passengerType: string;
-    carNumber: number;
-    carType: string;
-    seatNumber: string;
-  }[];
-}
+} from "lucide-react";
+import Header from "@/components/layout/Header/Header";
+import Footer from "@/components/layout/Footer";
+import { deleteReservation, addToCart } from "@/lib/api/booking";
+import { handleError } from "@/lib/utils/errorHandler";
+import {
+  useGetPendingBookingList,
+  PendingBookingInfo,
+} from "@/hooks/usePendingBooking";
+import { usePostPaymentPrepare } from "@/hooks/usePayment";
 
 export default function ReservationPage() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const [reservation, setReservation] = useState<ReservationDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [timeRemaining, setTimeRemaining] = useState("")
-  const [isNoticeOpen, setIsNoticeOpen] = useState(false)
-  const [showCancelDialog, setShowCancelDialog] = useState(false)
-  const [showCartDialog, setShowCartDialog] = useState(false)
-  const [showCartSuccessDialog, setShowCartSuccessDialog] = useState(false)
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const {
+    data,
+    isLoading,
+    isError,
+    error: queryError,
+  } = useGetPendingBookingList();
+  const [selectedBooking, setSelectedBooking] =
+    useState<PendingBookingInfo | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState("");
+  const [isNoticeOpen, setIsNoticeOpen] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showCartDialog, setShowCartDialog] = useState(false);
+  const [showCartSuccessDialog, setShowCartSuccessDialog] = useState(false);
+  const paymentWidgetRef = useRef<PaymentWidgetInstance | null>(null);
+  const paymentMethodsWidgetRef = useRef<ReturnType<PaymentWidgetInstance["renderPaymentMethods"]> | null>(null);
+  const [showPaymentWidget, setShowPaymentWidget] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<{ orderId: string; amount: number } | null>(null);
+  const { mutateAsync: preparePayment } = usePostPaymentPrepare();
 
+  // 대기 예약 목록에서 첫 번째 항목을 선택 (또는 선택된 항목이 있으면 유지)
   useEffect(() => {
-    const fetchReservationDetail = async () => {
-      try {
-        // 세션 스토리지에서 임시 예약 ID 가져오기
-        const tempReservationId = sessionStorage.getItem('tempReservationId')
-        
-        if (!tempReservationId) {
-          setError('예약 정보를 찾을 수 없습니다. 다시 예약해주세요.')
-          setLoading(false)
-          return
-        }
-
-        // 먼저 예약 ID로 상세 정보 조회
-        const response = await getReservationDetail(Number(tempReservationId))
-        if (response.result) {
-          setReservation(response.result)
-          // 성공적으로 로드된 후 임시 데이터 제거
-          sessionStorage.removeItem('tempReservationId')
-          
-          // 예약 코드를 세션 스토리지에 저장 (향후 접근용)
-          sessionStorage.setItem('reservationCode', response.result.reservationCode)
+    if (data?.result && data.result.length > 0) {
+      // 첫 번째 항목을 기본으로 선택
+      if (!selectedBooking) {
+        setSelectedBooking(data.result[0]);
+      } else {
+        // 선택된 항목이 있으면 리스트에서 찾아서 업데이트
+        const found = data.result.find(
+          (b) => b.pendingBookingId === selectedBooking.pendingBookingId
+        );
+        if (found) {
+          setSelectedBooking(found);
         } else {
-          setError('예약 정보를 찾을 수 없습니다.')
+          // 선택된 항목이 리스트에 없으면 첫 번째 항목 선택
+          setSelectedBooking(data.result[0]);
         }
-      } catch (err) {
-        const errorMessage = handleError(err, '예약 정보 조회 중 오류가 발생했습니다.', false)
-        setError(errorMessage)
-      } finally {
-        setLoading(false)
       }
     }
+  }, [data]);
 
-    fetchReservationDetail()
-  }, [])
+  // 대기 예약은 만료 시간이 없으므로 타이머 제거
+  // 필요시 다른 로직으로 대체 가능
 
+  // 토스 페이먼츠 위젯 초기화
   useEffect(() => {
-    if (!reservation) return
+    const initPaymentWidget = async () => {
+      try {
+        // TODO: 실제 클라이언트 키로 변경 필요
+        const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || "test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq";
+        const customerKey = `customer-${Date.now()}`;
 
-    const updateTimer = () => {
-      const now = new Date()
-      const deadline = new Date(reservation.expiresAt)
-      const diff = deadline.getTime() - now.getTime()
-
-      if (diff <= 0) {
-        setTimeRemaining("결제 기한이 만료되었습니다")
-        return
+        const paymentWidget = await loadPaymentWidget(clientKey, customerKey);
+        paymentWidgetRef.current = paymentWidget;
+      } catch (error) {
+        console.error("토스 페이먼츠 위젯 초기화 실패:", error);
       }
+    };
 
-      const minutes = Math.floor(diff / (1000 * 60))
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-      setTimeRemaining(`${minutes}분 ${seconds}초`)
+    initPaymentWidget();
+  }, []);
+
+  // 결제 수단 선택 UI 렌더링
+  useEffect(() => {
+    if (!showPaymentWidget || !paymentWidgetRef.current || !paymentInfo) return;
+
+    const renderPaymentMethods = async () => {
+      try {
+        const paymentMethodsWidget = paymentWidgetRef.current!.renderPaymentMethods(
+          "#payment-widget",
+          { value: paymentInfo.amount },
+          { variantKey: "DEFAULT" }
+        );
+        paymentMethodsWidgetRef.current = paymentMethodsWidget;
+      } catch (error) {
+        console.error("결제 수단 UI 렌더링 실패:", error);
+      }
+    };
+
+    renderPaymentMethods();
+
+    return () => {
+      if (paymentMethodsWidgetRef.current) {
+        paymentMethodsWidgetRef.current = null;
+      }
+    };
+  }, [showPaymentWidget, paymentInfo]);
+
+  // 예약하기 버튼 클릭 핸들러 - 결제 준비 API 호출 후 결제 수단 선택 UI 표시
+  const handleReservation = async () => {
+    if (!paymentWidgetRef.current) {
+      alert("결제 위젯을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
     }
 
-    updateTimer()
-    const timer = setInterval(updateTimer, 1000)
+    if (!selectedBooking) {
+      alert("예약 정보를 찾을 수 없습니다.");
+      return;
+    }
 
-    return () => clearInterval(timer)
-  }, [reservation])
+    try {
+      // 결제 준비 API 호출 - 대기 예약 ID 목록과 함께 전송
+      const response = await preparePayment({
+        message: "결제 준비 요청",
+        pendingBookingIds: [selectedBooking.pendingBookingId],
+      });
+      
+      if (response.result) {
+        // 받아온 orderId와 amount 저장
+        setPaymentInfo({
+          orderId: response.result.orderId,
+          amount: response.result.amount,
+        });
+        
+        // 결제 수단 선택 UI 표시
+        setShowPaymentWidget(true);
+      }
+    } catch (error) {
+      console.error("결제 준비 실패:", error);
+      alert("결제 준비 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 결제 요청 핸들러
+  const handleRequestPayment = async () => {
+    if (!paymentWidgetRef.current || !selectedBooking || !paymentInfo) {
+      return;
+    }
+
+    try {
+      // 결제 위젯 요청 (서버에서 받아온 orderId 사용)
+      await paymentWidgetRef.current.requestPayment({
+        orderId: paymentInfo.orderId,
+        orderName: `${selectedBooking.trainName} ${selectedBooking.trainNumber} 승차권`,
+        successUrl: `${window.location.origin}/ticket/reservation/success`,
+        failUrl: `${window.location.origin}/ticket/reservation/fail`,
+      });
+    } catch (error) {
+      console.error("결제 요청 실패:", error);
+      alert("결제 요청 중 오류가 발생했습니다.");
+    }
+  };
 
   const handleCancelReservation = () => {
-    setShowCancelDialog(true)
-  }
+    setShowCancelDialog(true);
+  };
 
   const confirmCancelReservation = async () => {
-    setShowCancelDialog(false)
+    setShowCancelDialog(false);
     try {
-      if (reservation) {
-        await deleteReservation(reservation.reservationId)
-        alert('예약이 취소되었습니다.')
-        router.push('/')
+      if (selectedBooking) {
+        // 대기 예약 취소 API 호출 (필요시 구현)
+        // await deletePendingBooking(selectedBooking.pendingBookingId)
+        alert("대기 예약이 취소되었습니다.");
+        // 리스트에서 제거된 항목을 다시 불러오기 위해 refetch 필요
+        router.push("/");
       } else {
-        alert('예약 정보를 찾을 수 없습니다.')
+        alert("예약 정보를 찾을 수 없습니다.");
       }
     } catch (e: any) {
-      handleError(e, '예약 취소 중 오류가 발생했습니다.')
+      handleError(e, "예약 취소 중 오류가 발생했습니다.");
     }
-  }
+  };
 
   const handleAddToCart = () => {
-    setShowCartDialog(true)
-  }
+    setShowCartDialog(true);
+  };
 
   const confirmAddToCart = async () => {
-    setShowCartDialog(false)
+    setShowCartDialog(false);
     try {
-      if (reservation) {
-        const response = await addToCart({ reservationId: reservation.reservationId })
-        if (response.message) {
-          setShowCartSuccessDialog(true)
-        } else {
-          alert('장바구니 추가에 실패했습니다.')
-        }
+      if (selectedBooking) {
+        // 대기 예약은 일반 예약과 다르므로 장바구니 추가 로직이 다를 수 있음
+        // 필요시 대기 예약 전용 API 호출
+        alert("대기 예약은 장바구니에 추가할 수 없습니다.");
+        // const response = await addToCart({ reservationId: selectedBooking.pendingBookingId })
+        // if (response.message) {
+        //   setShowCartSuccessDialog(true)
+        // } else {
+        //   alert('장바구니 추가에 실패했습니다.')
+        // }
       } else {
-        alert('예약 정보를 찾을 수 없습니다.')
+        alert("예약 정보를 찾을 수 없습니다.");
       }
     } catch (e: any) {
-      handleError(e, '장바구니 추가 중 오류가 발생했습니다.')
+      handleError(e, "장바구니 추가 중 오류가 발생했습니다.");
     }
-  }
+  };
 
   const handleCartSuccessConfirm = () => {
-    setShowCartSuccessDialog(false)
+    setShowCartSuccessDialog(false);
     // 현재 페이지에 머물기 (아무 동작 안함)
-  }
+  };
 
   const handleGoToCart = () => {
-    setShowCartSuccessDialog(false)
-    router.push("/cart")
-  }
+    setShowCartSuccessDialog(false);
+    router.push("/cart");
+  };
 
   const handlePayment = () => {
-    if (reservation) {
-      // 예약 ID를 세션 스토리지에 저장하고 결제 페이지로 이동
-      sessionStorage.setItem('tempReservationId', reservation.reservationId.toString())
-      router.push("/ticket/payment")
+    if (selectedBooking) {
+      // 대기 예약 ID를 세션 스토리지에 저장하고 결제 페이지로 이동
+      sessionStorage.setItem(
+        "tempPendingBookingId",
+        selectedBooking.pendingBookingId
+      );
+      router.push("/ticket/payment");
     }
-  }
+  };
 
   const getTrainTypeColor = (trainName: string) => {
     switch (trainName) {
       case "KTX":
-        return "bg-blue-600 text-white"
+        return "bg-blue-600 text-white";
       case "ITX-새마을":
-        return "bg-green-600 text-white"
+        return "bg-green-600 text-white";
       case "무궁화호":
-        return "bg-orange-600 text-white"
+        return "bg-orange-600 text-white";
       case "ITX-청춘":
-        return "bg-purple-600 text-white"
+        return "bg-purple-600 text-white";
       default:
-        return "bg-gray-600 text-white"
+        return "bg-gray-600 text-white";
     }
-  }
+  };
 
   const formatPrice = (price: number) => {
-    return price.toLocaleString() + "원"
-  }
+    return price.toLocaleString() + "원";
+  };
 
+  // 대기 예약에는 fare 정보가 없음
   const getTotalPrice = () => {
-    if (!reservation) return 0
-    return reservation.fare
-  }
+    return 0;
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return format(date, "yyyy년 MM월 dd일(EEEE)", { locale: ko })
-  }
+    const date = new Date(dateString);
+    return format(date, "yyyy년 MM월 dd일(EEEE)", { locale: ko });
+  };
 
   const formatTime = (timeString: string) => {
-    return timeString.substring(0, 5) // "HH:mm" 형식으로 변환
-  }
+    return timeString.substring(0, 5); // "HH:mm" 형식으로 변환
+  };
+
+  const loading = isLoading;
+  const error = queryError?.message || null;
+  const reservation = selectedBooking;
 
   if (loading) {
     return (
@@ -223,29 +298,31 @@ export default function ReservationPage() {
         <Header />
         <div className="container mx-auto px-4 py-16 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">예약 정보를 불러오고 있습니다...</p>
+          <p className="text-gray-600">대기 예약 정보를 불러오고 있습니다...</p>
         </div>
         <Footer />
       </div>
-    )
+    );
   }
 
-  if (error || !reservation) {
+  if (isError || !data?.result || data.result.length === 0 || !reservation) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
         <Header />
         <div className="container mx-auto px-4 py-16 text-center">
           <div className="text-red-600 mb-4">
-            <p className="text-lg font-semibold">예약 정보를 불러올 수 없습니다</p>
-            <p className="text-sm">{error}</p>
+            <p className="text-lg font-semibold">
+              대기 예약 정보를 불러올 수 없습니다
+            </p>
+            <p className="text-sm">{error || "대기 예약이 없습니다."}</p>
           </div>
-          <Button onClick={() => router.push('/')} variant="outline">
+          <Button onClick={() => router.push("/")} variant="outline">
             홈으로 돌아가기
           </Button>
         </div>
         <Footer />
       </div>
-    )
+    );
   }
 
   return (
@@ -257,8 +334,12 @@ export default function ReservationPage() {
         <div className="max-w-4xl mx-auto">
           {/* Page Title */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">승차권 예약 완료</h2>
-            <p className="text-gray-600">예약이 완료되었습니다. 결제 기한 내에 결제를 완료해주세요.</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              대기 예약 목록
+            </h2>
+            <p className="text-gray-600">
+              대기 예약 목록입니다. 좌석이 확정되면 알림을 드립니다.
+            </p>
           </div>
 
           {/* Payment Deadline Warning */}
@@ -266,7 +347,9 @@ export default function ReservationPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-center space-x-2 text-red-700">
                 <Clock className="h-5 w-5" />
-                <span className="font-medium">결제기한이 지난 목록은 자동 삭제됩니다</span>
+                <span className="font-medium">
+                  결제기한이 지난 목록은 자동 삭제됩니다
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -277,19 +360,33 @@ export default function ReservationPage() {
               <div className="border-l-4 border-blue-500 pl-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <Badge className={`${getTrainTypeColor(reservation.trainName)} px-3 py-1`}>
+                    <Badge
+                      className={`${getTrainTypeColor(
+                        reservation.trainName
+                      )} px-3 py-1`}
+                    >
                       {reservation.trainName}
                     </Badge>
-                    <span className="text-xl font-bold">{reservation.trainNumber}</span>
-                    <span className="text-gray-600">{formatDate(reservation.operationDate)}</span>
+                    <span className="text-xl font-bold">
+                      {reservation.trainNumber}
+                    </span>
+                    <span className="text-gray-600">
+                      {formatDate(reservation.operationDate)}
+                    </span>
+                    <Badge variant="outline" className="ml-2">
+                      대기 예약
+                    </Badge>
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" onClick={handleCancelReservation}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelReservation}
+                    >
                       예약취소
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleAddToCart}>
-                      <ShoppingCart className="h-4 w-4 mr-1" />
-                      장바구니
+                    <Button variant="outline" size="sm" onClick={handleReservation}>
+                      예약하기
                     </Button>
                   </div>
                 </div>
@@ -303,9 +400,13 @@ export default function ReservationPage() {
                     </h3>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-4">
-                        <span className="text-lg font-semibold">{reservation.departureStationName}</span>
+                        <span className="text-lg font-semibold">
+                          {reservation.departureStationName}
+                        </span>
                         <ArrowRight className="h-4 w-4 text-gray-400" />
-                        <span className="text-lg font-semibold">{reservation.arrivalStationName}</span>
+                        <span className="text-lg font-semibold">
+                          {reservation.arrivalStationName}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-4 text-gray-600">
                         <span>{formatTime(reservation.departureTime)}</span>
@@ -317,71 +418,108 @@ export default function ReservationPage() {
 
                   {/* Seat Information */}
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">좌석 정보</h3>
+                    <h3 className="font-semibold text-gray-900 mb-3">
+                      좌석 정보
+                    </h3>
                     <div className="space-y-2">
                       <div className="space-y-1">
                         {reservation.seats.map((seat, index) => (
-                          <div key={seat.seatReservationId} className="flex items-center justify-between">
+                          <div
+                            key={seat.seatId || index}
+                            className="flex items-center justify-between"
+                          >
                             <div className="flex items-center space-x-2">
-                              <span className="font-medium">{seat.carType === "FIRST_CLASS" ? "특실" : "일반실"}</span>
+                              <span className="font-medium">
+                                {seat.carType === "FIRST_CLASS"
+                                  ? "특실"
+                                  : seat.carType === "STANDARD"
+                                  ? "일반실"
+                                  : "일반실"}
+                              </span>
                               <span className="text-gray-600">
                                 {seat.carNumber}호차 {seat.seatNumber}
                               </span>
                               <Badge variant="outline" className="text-xs">
-                                {seat.passengerType === "ADULT" ? "어른" : 
-                                 seat.passengerType === "CHILD" ? "어린이" :
-                                 seat.passengerType === "SENIOR" ? "경로" :
-                                 seat.passengerType === "DISABLED_HEAVY" ? "중증장애인" :
-                                 seat.passengerType === "DISABLED_LIGHT" ? "경증장애인" :
-                                 seat.passengerType === "VETERAN" ? "국가유공자" :
-                                 seat.passengerType === "INFANT" ? "유아" : seat.passengerType}
+                                {seat.passengerType === "ADULT"
+                                  ? "어른"
+                                  : seat.passengerType === "CHILD"
+                                  ? "어린이"
+                                  : seat.passengerType === "SENIOR"
+                                  ? "경로"
+                                  : seat.passengerType === "DISABLED_HEAVY"
+                                  ? "중증장애인"
+                                  : seat.passengerType === "DISABLED_LIGHT"
+                                  ? "경증장애인"
+                                  : seat.passengerType === "VETERAN"
+                                  ? "국가유공자"
+                                  : seat.passengerType === "INFANT"
+                                  ? "유아"
+                                  : seat.passengerType}
                               </Badge>
                             </div>
-
                           </div>
                         ))}
                       </div>
                       <div className="border-t pt-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold">총 요금</span>
-                          <span className="text-lg font-bold text-blue-600">{formatPrice(getTotalPrice())}</span>
+                          <span className="font-semibold">대기 예약</span>
+                          <span className="text-sm text-gray-600">
+                            좌석 확정 대기 중
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Payment Deadline */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-5 w-5 text-yellow-600" />
-                      <span className="font-medium text-yellow-800">결제기한:</span>
-                      <span className="text-yellow-800">
-                        {format(new Date(reservation.expiresAt), "yyyy년 MM월 dd일 HH:mm", { locale: ko })}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-yellow-600">남은 시간</div>
-                      <div className="font-bold text-yellow-800">{timeRemaining}</div>
-                    </div>
+                {/* 대기 예약 안내 */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-5 w-5 text-blue-600" />
+                    <span className="font-medium text-blue-800">
+                      대기 예약 상태
+                    </span>
                   </div>
+                  <p className="text-sm text-blue-700 mt-2">
+                    좌석이 확정되면 알림을 드립니다. 대기 예약은 좌석이 확정될
+                    때까지 대기 상태입니다.
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Payment Button */}
-          <div className="text-center mb-8">
-            <Button
-              onClick={handlePayment}
-              size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-12 py-4 text-lg"
-            >
-              <CreditCard className="h-5 w-5 mr-2" />
-              결제하기
-            </Button>
-          </div>
+          {/* 결제 수단 선택 UI */}
+          {showPaymentWidget && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>결제 수단 선택</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div id="payment-widget" className="mb-4"></div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPaymentWidget(false)}
+                  >
+                    취소
+                  </Button>
+                  <Button onClick={handleRequestPayment} className="flex-1">
+                    결제하기
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 대기 예약은 결제 불가 */}
+          {data.result.length > 1 && !showPaymentWidget && (
+            <div className="text-center mb-8">
+              <p className="text-gray-600 mb-4">
+                다른 대기 예약 {data.result.length - 1}개가 있습니다.
+              </p>
+            </div>
+          )}
 
           {/* Notice Section */}
           <Card>
@@ -390,17 +528,21 @@ export default function ReservationPage() {
                 <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">안내</CardTitle>
-                    {isNoticeOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                    {isNoticeOpen ? (
+                      <ChevronUp className="h-5 w-5" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5" />
+                    )}
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="pt-0">
                   <div className="space-y-2 text-sm text-gray-600">
-                    <p>• 10분 이내 결제하셔야 승차권 구매가 완료됩니다.</p>
-                    <p>• 승차권 예약 후 10분 이내에 결제하지 않으면 예약이 자동 취소됩니다.</p>
-                    <p>• 결제 완료 후에는 출발시간 20분 전까지 취소 가능합니다.</p>
-                    <p>• 예약번호: {reservation.reservationCode}</p>
+                    <p>• 대기 예약은 좌석이 확정될 때까지 대기 상태입니다.</p>
+                    <p>• 좌석이 확정되면 알림을 드립니다.</p>
+                    <p>• 대기 예약은 취소할 수 있습니다.</p>
+                    <p>• 대기 예약 ID: {reservation.pendingBookingId}</p>
                   </div>
                 </CardContent>
               </CollapsibleContent>
@@ -422,7 +564,10 @@ export default function ReservationPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmCancelReservation} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={confirmCancelReservation}
+              className="bg-red-600 hover:bg-red-700"
+            >
               확인
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -442,13 +587,18 @@ export default function ReservationPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmAddToCart}>확인</AlertDialogAction>
+            <AlertDialogAction onClick={confirmAddToCart}>
+              확인
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Cart Success Dialog */}
-      <AlertDialog open={showCartSuccessDialog} onOpenChange={setShowCartSuccessDialog}>
+      <AlertDialog
+        open={showCartSuccessDialog}
+        onOpenChange={setShowCartSuccessDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center space-x-2">
@@ -458,12 +608,18 @@ export default function ReservationPage() {
             <AlertDialogDescription>
               장바구니에 등록되었습니다.
               <br />
-              장바구니에서 여러 승차권을 함께 결제하거나 현재 페이지에서 계속 이용하실 수 있습니다.
+              장바구니에서 여러 승차권을 함께 결제하거나 현재 페이지에서 계속
+              이용하실 수 있습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCartSuccessConfirm}>확인</AlertDialogCancel>
-            <AlertDialogAction onClick={handleGoToCart} className="bg-blue-600 hover:bg-blue-700">
+            <AlertDialogCancel onClick={handleCartSuccessConfirm}>
+              확인
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleGoToCart}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               장바구니로 이동
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -472,5 +628,5 @@ export default function ReservationPage() {
 
       <Footer />
     </div>
-  )
+  );
 }
