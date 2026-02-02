@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import {
   SearchTrainCalendarResponse,
@@ -17,58 +17,36 @@ const API_BASE_URL =
 export const usePostTrainSeatsDetail = (
   params: TrainSeatsDetailRequest | null
 ) => {
-  return useQuery({
-    queryKey: ["trainSeatsDetail", params],
-    queryFn: async (): Promise<TrainSeatsDetailResult> => {
+  return useMutation({
+    mutationFn: async (): Promise<TrainSeatsDetailResponse> => {
       const { data } = await axios.post<TrainSeatsDetailResponse>(
         `${API_BASE_URL}/api/v1/trains/seats/detail`,
-        params!,
-        {
-          headers: { "Content-Type": "application/json" },
-        }
+        params!
       );
-      return data.result;
+      return data;
     },
-    enabled:
-      params !== null &&
-      params.trainCarId > 0 &&
-      params.trainScheduleId > 0 &&
-      params.departureStationId > 0 &&
-      params.arrivalStationId > 0,
   });
 };
 
 export const usePostSearchTrainSchedule = (
   params: SearchTrainScheduleRequest | null
 ) => {
-  return useQuery({
-    queryKey: ["searchTrainSchedule", params],
-    queryFn: async (): Promise<SearchTrainScheduleResponse> => {
+  return useMutation({
+    mutationFn: async (): Promise<SearchTrainScheduleResponse> => {
       const { data } = await axios.post<SearchTrainScheduleResponse>(
         `${API_BASE_URL}/api/v1/trains/search/schedule`,
-        params!,
-        {
-          headers: { "Content-Type": "application/json" },
-        }
+        params!
       );
       return data;
     },
-    enabled:
-      params !== null &&
-      params.departureStationId > 0 &&
-      params.arrivalStationId > 0 &&
-      params.operationDate !== "" &&
-      params.passengerCount > 0 &&
-      params.departureHour !== "",
   });
 };
 
 export const usePostSearchTrainCars = (
   params: SearchTrainCarsRequest | null
 ) => {
-  return useQuery({
-    queryKey: ["searchTrainCars", params],
-    queryFn: async (): Promise<SearchTrainCarsResponse> => {
+  return useMutation({
+    mutationFn: async (): Promise<SearchTrainCarsResponse> => {
       const { data } = await axios.post<SearchTrainCarsResponse>(
         `${API_BASE_URL}/api/v1/trains/search/cars`,
         params!,
@@ -78,12 +56,6 @@ export const usePostSearchTrainCars = (
       );
       return data;
     },
-    enabled:
-      params !== null &&
-      params.trainScheduleId > 0 &&
-      params.departureStationId > 0 &&
-      params.arrivalStationId > 0 &&
-      params.passengerCount > 0,
   });
 };
 
