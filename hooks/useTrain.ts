@@ -8,7 +8,6 @@ import {
   SearchTrainScheduleResponse,
   TrainSeatsDetailRequest,
   TrainSeatsDetailResponse,
-  TrainSeatsDetailResult,
 } from "@/types/trainType";
 
 const API_BASE_URL =
@@ -17,13 +16,25 @@ const API_BASE_URL =
 export const usePostTrainSeatsDetail = (
   params: TrainSeatsDetailRequest | null
 ) => {
-  return useMutation({
-    mutationFn: async (): Promise<TrainSeatsDetailResponse> => {
-      const { data } = await axios.post<TrainSeatsDetailResponse>(
-        `${API_BASE_URL}/api/v1/trains/seats/detail`,
-        params!
-      );
-      return data;
+  return useMutation<TrainSeatsDetailResponse, Error, TrainSeatsDetailRequest>({
+    mutationFn: async (
+      params: TrainSeatsDetailRequest
+    ): Promise<TrainSeatsDetailResponse> => {
+      try {
+        const { data } = await axios.post<TrainSeatsDetailResponse>(
+          `${API_BASE_URL}/api/v1/trains/seats/detail`,
+          params
+        );
+        return data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.data) {
+          const message =
+            (error.response.data as { message?: string }).message ||
+            "열차 좌석 상세 조회에 실패했습니다.";
+          throw new Error(message);
+        }
+        throw error;
+      }
     },
   });
 };
@@ -31,13 +42,29 @@ export const usePostTrainSeatsDetail = (
 export const usePostSearchTrainSchedule = (
   params: SearchTrainScheduleRequest | null
 ) => {
-  return useMutation({
-    mutationFn: async (): Promise<SearchTrainScheduleResponse> => {
-      const { data } = await axios.post<SearchTrainScheduleResponse>(
-        `${API_BASE_URL}/api/v1/trains/search/schedule`,
-        params!
-      );
-      return data;
+  return useMutation<
+    SearchTrainScheduleResponse,
+    Error,
+    SearchTrainScheduleRequest
+  >({
+    mutationFn: async (
+      params: SearchTrainScheduleRequest
+    ): Promise<SearchTrainScheduleResponse> => {
+      try {
+        const { data } = await axios.post<SearchTrainScheduleResponse>(
+          `${API_BASE_URL}/api/v1/trains/search/schedule`,
+          params
+        );
+        return data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.data) {
+          const message =
+            (error.response.data as { message?: string }).message ||
+            "열차 운행 조회에 실패했습니다.";
+          throw new Error(message);
+        }
+        throw error;
+      }
     },
   });
 };
@@ -45,28 +72,47 @@ export const usePostSearchTrainSchedule = (
 export const usePostSearchTrainCars = (
   params: SearchTrainCarsRequest | null
 ) => {
-  return useMutation({
-    mutationFn: async (): Promise<SearchTrainCarsResponse> => {
-      const { data } = await axios.post<SearchTrainCarsResponse>(
-        `${API_BASE_URL}/api/v1/trains/search/cars`,
-        params!,
-        {
-          headers: { "Content-Type": "application/json" },
+  return useMutation<SearchTrainCarsResponse, Error, SearchTrainCarsRequest>({
+    mutationFn: async (
+      params: SearchTrainCarsRequest
+    ): Promise<SearchTrainCarsResponse> => {
+      try {
+        const { data } = await axios.post<SearchTrainCarsResponse>(
+          `${API_BASE_URL}/api/v1/trains/search/cars`,
+          params
+        );
+        return data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.data) {
+          const message =
+            (error.response.data as { message?: string }).message ||
+            "열차 객차 조회에 실패했습니다.";
+          throw new Error(message);
         }
-      );
-      return data;
+        throw error;
+      }
     },
   });
 };
 
 export const useGetSearchTrainCalendar = () => {
-  return useQuery({
+  return useQuery<SearchTrainCalendarResponse, Error>({
     queryKey: ["searchTrainCalendar"],
     queryFn: async (): Promise<SearchTrainCalendarResponse> => {
-      const { data } = await axios.get<SearchTrainCalendarResponse>(
-        `${API_BASE_URL}/api/v1/trains/search/calendar`
-      );
-      return data;
+      try {
+        const { data } = await axios.get<SearchTrainCalendarResponse>(
+          `${API_BASE_URL}/api/v1/trains/search/calendar`
+        );
+        return data;
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.data) {
+          const message =
+            (error.response.data as { message?: string }).message ||
+            "열차 운행 캘린더 조회에 실패했습니다.";
+          throw new Error(message);
+        }
+        throw error;
+      }
     },
     enabled: true,
   });
