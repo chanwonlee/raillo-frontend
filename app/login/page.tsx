@@ -5,26 +5,20 @@ import LoginHeader from "./_components/LoginHeader";
 import LoginField from "./_components/LoginField";
 import LoginHelpLinks from "./_components/LoginHelpLinks";
 import { CardContent } from "@/components/ui/card";
-import { useAuth } from "@/hooks/use-auth";
-import { redirect } from "next/navigation";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useAuthStore } from "@/stores/auth-store";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LoginPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth({
-    requireAuth: true,
-  });
+  const { isAuthenticated } = useAuthStore();
+  const router = useRouter();
 
-  if (authLoading) {
-    return (
-      <div className="py-10 flex justify-center items-center w-full min-h-[60vh]">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return redirect("/");
-  }
+  useEffect(() => {
+    // 이미 로그인된 상태면 홈으로 리다이렉트
+    if (isAuthenticated) {
+      router.push("/");
+    }
+  }, [isAuthenticated, router]);
 
   return (
     <div className="py-10 flex justify-center items-center w-full">
