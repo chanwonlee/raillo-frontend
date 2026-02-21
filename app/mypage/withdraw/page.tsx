@@ -9,15 +9,16 @@ import {Label} from "@/components/ui/label"
 import {Alert, AlertDescription} from "@/components/ui/alert"
 import {Checkbox} from "@/components/ui/checkbox"
 import {AlertTriangle, ChevronLeft, UserX} from "lucide-react"
-import {tokenManager} from "@/lib/auth"
 import {deleteAccount} from "@/lib/api/user"
 import Header from "@/components/layout/Header/Header"
 import Footer from "@/components/layout/Footer"
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
+import { useAuthStore } from "@/stores/auth-store"
 
 export default function WithdrawPage() {
     const { isChecking, isAuthenticated } = useAuth()
+    const removeTokens = useAuthStore((state) => state.removeTokens)
     const [confirmText, setConfirmText] = useState("")
     const [agreements, setAgreements] = useState({
         dataDeletion: false,
@@ -52,7 +53,7 @@ export default function WithdrawPage() {
             // 여기까지 오면 성공으로 간주
             setSuccess(true)
             // 토큰 삭제
-            tokenManager.removeToken()
+            removeTokens()
 
             // 3초 후 홈으로 이동
             setTimeout(() => {

@@ -19,7 +19,7 @@ import { BookingPanel } from "@/components/ui/booking-panel";
 import { SearchForm } from "@/components/ui/search-form";
 import { TrainList } from "@/components/ui/train-list";
 import { UsageInfo } from "@/components/ui/usage-info";
-import { tokenManager } from "@/lib/auth";
+import { useAuthStore } from "@/stores/auth-store";
 import { ko } from "date-fns/locale";
 
 // 2. Add PassengerCounts interface
@@ -79,6 +79,7 @@ interface ReservationInfo {
 // 3. Update the component to include passenger selection functionality and fix date selection
 export default function TrainSearchPage() {
   const router = useRouter();
+  const initializeAuth = useAuthStore((state) => state.initialize);
   const { mutateAsync: createPendingBooking } = usePostPendingBooking();
   const [allTrains, setAllTrains] = useState<TrainInfo[]>([]);
   const [displayedTrains, setDisplayedTrains] = useState<TrainInfo[]>([]);
@@ -891,11 +892,24 @@ export default function TrainSearchPage() {
       .filter((id) => id > 0);
   };
 
+  const hasValidAccessToken = () => {
+    const { accessToken, tokenExpiresIn } = useAuthStore.getState();
+    return (
+      Boolean(accessToken) &&
+      Boolean(tokenExpiresIn) &&
+      Date.now() < (tokenExpiresIn ?? 0)
+    );
+  };
+
   const handleBooking = async () => {
     if (!selectedTrain) return;
 
     // 로그인 상태 확인
-    if (!tokenManager.isAuthenticated()) {
+    if (!hasValidAccessToken()) {
+      await initializeAuth();
+    }
+
+    if (!hasValidAccessToken()) {
       // 현재 경로를 redirectTo로 전달
       const currentPath =
         typeof window !== "undefined"

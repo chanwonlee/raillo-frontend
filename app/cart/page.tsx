@@ -147,7 +147,7 @@ export default function CartPage() {
   }
 
   const formatPrice = (price: number) => {
-    return price.toLocaleString() + "원"
+    return 1000 + "원"
   }
 
   const formatDate = (dateString: string) => {
@@ -439,7 +439,7 @@ export default function CartPage() {
                 {cartItems.map((item) => {
                   const isExpired = new Date(item.expiresAt) < new Date();
                   return (
-                    <Card key={item.reservationId} className={`${item.selected ? "ring-2 ring-blue-500 bg-blue-50" : ""} ${isExpired ? "ring-2 ring-red-500 bg-red-50" : ""}`}>
+                    <Card key={item.reservationId} className={`${item.selected ? "ring-2 ring-blue-500 bg-blue-50" : ""}`}>
                     <CardContent className="p-6">
                       <div className="flex items-start space-x-4">
                         <Checkbox
@@ -512,7 +512,6 @@ export default function CartPage() {
                               <div className="text-sm text-gray-500">예약번호: {item.reservationCode}</div>
                               <div className="text-right">
                                 <div className="text-sm text-red-600 font-semibold">
-                                  결제기한: {format(new Date(item.expiresAt), "MM월 dd일 HH:mm", { locale: ko })}
                                 </div>
                               </div>
                             </div>

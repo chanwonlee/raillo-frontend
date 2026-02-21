@@ -5,17 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { tokenManager } from "@/lib/auth";
 import { login } from "@/lib/api/auth";
 import { handleError } from "@/lib/utils/errorHandler";
+import { useAuthStore } from "@/stores/auth-store";
 
 const LoginField = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [memberNumber, setMemberNumber] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
+  const setTokens = useAuthStore((state) => state.setTokens);
   const memberNumberInputRef = useRef<HTMLInputElement>(null);
 
   // 페이지 로드 시 localStorage에서 회원번호 가져오기
@@ -44,12 +43,13 @@ const LoginField = () => {
       const response = await login({ memberNo: memberNumber, password });
 
       if (response.result) {
-        // accessToken을 sessionStorage에 저장 (refreshToken은 백엔드에서 HttpOnly 쿠키로 설정)
-        tokenManager.setLoginTokens(
+        // 토큰 만료 시각은 ms 단위 절대 시각으로 저장
+        const expiresIn = Date.now() + response.result.accessTokenExpiresIn * 1000;
+        setTokens(
           response.result.accessToken,
-          response.result.accessTokenExpiresIn
+          expiresIn
         );
-        router.push("/");
+        window.location.href = "/";
       }
     } catch (error: any) {
       handleError(error, "로그인에 실패했습니다.");

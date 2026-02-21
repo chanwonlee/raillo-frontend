@@ -12,8 +12,6 @@ import {
   Shield,
   Smartphone,
 } from "lucide-react"
-import {tokenManager} from "@/lib/auth"
-import {useRouter} from "next/navigation"
 import Header from "@/components/layout/Header/Header"
 import Footer from "@/components/layout/Footer"
 import {getMemberInfo, MemberInfo} from "@/lib/api/user"
@@ -24,7 +22,6 @@ export default function MyPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth({ requireAuth: true })
   const [memberInfo, setMemberInfo] = useState<MemberInfo | null>(null)
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
   useEffect(() => {
     const fetchMemberInfo = async () => {
       if (isAuthenticated) {

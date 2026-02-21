@@ -1,8 +1,5 @@
 import axios from "axios";
 import { useAuthStore } from "@/stores/auth-store";
-import { TokenReissueResponse } from "@/types/authType";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 // 모든 axios 요청에 자격 증명(쿠키) 포함
 axios.defaults.withCredentials = true;
@@ -43,25 +40,18 @@ axios.interceptors.response.use(
     if (response.status === 401 && !config.url?.includes("/auth/reissue")) {
       (config as any)._retry = true;
 
-      const { setTokens, removeTokens } = useAuthStore.getState();
+      const { refreshTokens, getToken, removeTokens } = useAuthStore.getState();
 
       try {
-        const { data } = await axios.post<TokenReissueResponse>(
-          `${API_BASE_URL}/auth/reissue`,
-          {},
-          { withCredentials: true }
-        );
+        const refreshed = await refreshTokens();
 
-        if (data.result) {
-          const { accessToken, accessTokenExpiresIn } = data.result;
-          const expiresIn = Date.now() + accessTokenExpiresIn * 1000;
-
-          // Zustand에 토큰 저장
-          setTokens(accessToken, expiresIn);
-
+        if (refreshed) {
+          const refreshedToken = getToken();
           // 원래 요청의 Authorization 헤더 갱신
-          config.headers = config.headers ?? {};
-          config.headers["Authorization"] = `Bearer ${accessToken}`;
+          if (refreshedToken) {
+            config.headers = config.headers ?? {};
+            config.headers["Authorization"] = `Bearer ${refreshedToken}`;
+          }
 
           // 갱신된 토큰으로 원래 요청 재시도
           return axios(config);

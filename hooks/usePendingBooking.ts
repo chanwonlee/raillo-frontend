@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { tokenManager } from "@/lib/auth";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
@@ -72,7 +71,6 @@ export const usePostPendingBooking = () => {
   });
 };
 
-// 대기 예약 목록 조회 hook
 export const useGetPendingBookingList = () => {
   return useQuery<PendingBookingListResponse, Error>({
     queryKey: ["pendingBookings"],

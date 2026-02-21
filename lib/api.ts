@@ -1,4 +1,4 @@
-import {tokenManager} from './auth';
+import { useAuthStore } from "@/stores/auth-store";
 
 // API 기본 설정
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -39,6 +39,11 @@ export class ApiError extends Error {
     }
 }
 
+const hasValidAccessToken = (): boolean => {
+    const { accessToken, tokenExpiresIn } = useAuthStore.getState();
+    return Boolean(accessToken) && Boolean(tokenExpiresIn) && Date.now() < (tokenExpiresIn ?? 0);
+};
+
 // 기본 헤더 설정 (토큰 자동 포함)
 const getDefaultHeaders = async (): Promise<Record<string, string>> => {
     const headers: Record<string, string> = {
@@ -46,8 +51,8 @@ const getDefaultHeaders = async (): Promise<Record<string, string>> => {
     };
 
     // 토큰이 있고 유효하면 Authorization 헤더 추가
-    if (tokenManager.isAuthenticated()) {
-        const token = tokenManager.getToken();
+    if (hasValidAccessToken()) {
+        const token = useAuthStore.getState().getToken();
         if (token) {
             headers.Authorization = `Bearer ${token}`;
         }
@@ -87,14 +92,23 @@ async function apiRequest<T>(
         if (!response.ok) {
             // 401 에러이고 재시도하지 않은 경우 토큰 갱신 시도
             if (response.status === 401 && retryCount === 0) {
-                const refreshSuccess = await tokenManager.refreshToken();
+                const refreshSuccess = await useAuthStore.getState().refreshTokens();
                 
                 if (refreshSuccess) {
                     // 토큰 갱신 성공 시 재시도 (최대 1회)
                     return apiRequest<T>(endpoint, options, retryCount + 1);
                 } else {
                     // 토큰 갱신 실패 시 사용자에게 알림 및 로그인 페이지로 리다이렉트
-                    await tokenManager.handleTokenExpiration();
+                    useAuthStore.getState().removeTokens();
+                    if (typeof window !== "undefined") {
+                        const shouldLogin = window.confirm(
+                            '로그인 세션이 만료되었습니다.\n\n' +
+                            '로그인 페이지로 이동하시겠습니까?'
+                        );
+                        if (shouldLogin) {
+                            window.location.href = '/login';
+                        }
+                    }
                     // 에러 처리로 넘어감
                 }
             }

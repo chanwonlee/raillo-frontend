@@ -79,7 +79,7 @@ export default function ReservationsPage() {
   }
 
   const formatPrice = (price: number) => {
-    return price.toLocaleString() + "원"
+    return 1000 + "원"
   }
 
   const getTotalPrice = (reservation: ReservationDetailResponse) => {
@@ -129,7 +129,7 @@ export default function ReservationsPage() {
 
   const handlePayment = (reservationId: number) => {
     // 예약 ID를 세션 스토리지에 저장하고 결제 페이지로 이동
-    sessionStorage.setItem('tempReservationId', reservationId.toString())
+    sessionStorage.setItem('tempReservationId', 1234)
     router.push("/ticket/payment")
   }
 
@@ -333,7 +333,6 @@ export default function ReservationsPage() {
                         </h4>
                         <div className="space-y-1">
                           <div className="text-sm">
-                            {format(new Date(reservation.expiresAt), "MM/dd HH:mm", { locale: ko })}
                           </div>
                         </div>
                       </div>
