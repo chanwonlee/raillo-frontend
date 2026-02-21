@@ -126,13 +126,12 @@ export default function ReservationsPage() {
   }
 
   const handlePayment = (reservation: PendingBookingCartItem) => {
-    if (typeof reservation.reservationId !== "number") {
+    if (!reservation.pendingBookingId) {
       alert("결제 가능한 예약 정보가 없습니다.")
       return
     }
 
-    sessionStorage.setItem('tempReservationId', reservation.reservationId.toString())
-    router.push("/ticket/payment")
+    router.push(`/ticket/reservation?pendingBookingId=${encodeURIComponent(reservation.pendingBookingId)}`)
   }
 
   // 로그인 상태 확인 중이거나 인증되지 않은 경우 로딩 표시

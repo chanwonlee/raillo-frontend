@@ -45,6 +45,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 export default function ReservationPage() {
   const searchParams = useSearchParams();
+  const requestedPendingBookingId = searchParams.get("pendingBookingId");
   const router = useRouter();
   const { isAuthenticated, isChecking } = useAuth({ redirectPath: "/ticket/reservation" });
   const {
@@ -70,6 +71,16 @@ export default function ReservationPage() {
   // 대기 예약 목록에서 첫 번째 항목을 선택 (또는 선택된 항목이 있으면 유지)
   useEffect(() => {
     if (data?.result && data.result.length > 0) {
+      if (requestedPendingBookingId) {
+        const requestedBooking = data.result.find(
+          (booking) => booking.pendingBookingId === requestedPendingBookingId
+        );
+        if (requestedBooking) {
+          setSelectedBooking(requestedBooking);
+          return;
+        }
+      }
+
       // 첫 번째 항목을 기본으로 선택
       if (!selectedBooking) {
         setSelectedBooking(data.result[0]);
@@ -86,7 +97,7 @@ export default function ReservationPage() {
         }
       }
     }
-  }, [data]);
+  }, [data, requestedPendingBookingId, selectedBooking]);
 
   // 대기 예약은 만료 시간이 없으므로 타이머 제거
   // 필요시 다른 로직으로 대체 가능
