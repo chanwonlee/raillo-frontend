@@ -4,12 +4,9 @@ import Link from "next/link"
 import {useEffect, useState} from "react"
 import {Button} from "@/components/ui/button"
 import {Card, CardContent} from "@/components/ui/card"
-import {Badge} from "@/components/ui/badge"
 import {
-  Award,
   Lock,
   Mail,
-  Shield,
   Smartphone,
 } from "lucide-react"
 import {getMemberInfo, MemberInfo} from "@/lib/api/user"
@@ -60,8 +57,6 @@ export default function MyPage() {
   const displayMemberId = memberInfo?.memberId || "로딩 중..."
   const displayEmail = memberInfo?.email || "인증 필요"
   const displayPhone = memberInfo?.phoneNumber || "인증 필요"
-  const displayGrade = memberInfo?.memberGrade || "일반"
-  const displayMileage = memberInfo?.mileage || 0
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -122,7 +117,7 @@ export default function MyPage() {
                   </div>
 
                   {/* 휴대폰 번호 */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center py-5 border-b border-gray-100">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center py-5">
                     <div className="font-medium text-gray-700">휴대폰 번호</div>
                     <div className="md:col-span-2">
                       <Link href="/mypage/phone/change">
@@ -131,30 +126,6 @@ export default function MyPage() {
                           휴대폰 번호 변경
                         </Button>
                       </Link>
-                    </div>
-                  </div>
-
-
-
-                  {/* 회원등급 */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center py-5 border-b border-gray-100">
-                    <div className="font-medium text-gray-700">회원등급</div>
-                    <div className="md:col-span-2 flex items-center space-x-2">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-sm px-3 py-1">
-                        {displayGrade}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* KTX 마일리지/포인트 */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center py-5">
-                    <div className="font-medium text-gray-700">KTX 마일리지/포인트</div>
-                    <div className="md:col-span-2 flex items-center space-x-2">
-                      <span className="text-lg font-semibold text-blue-600">{displayMileage}</span>
-                      <Button variant="outline" size="sm" className="h-8 px-4 text-sm rounded-full">
-                        <Award className="h-3 w-3 mr-1" />
-                        내역보기
-                      </Button>
                     </div>
                   </div>
                 </div>

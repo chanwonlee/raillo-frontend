@@ -29,7 +29,6 @@ export default function ContactVerifyPage() {
     ticketInfo: false,
     membershipPerformance: false,
     paymentManagement: false,
-    memberInfoManagement: false,
   })
 
   const toggleSection = (section: string) => {
@@ -164,24 +163,6 @@ export default function ContactVerifyPage() {
                       <ChevronDown
                         className={`h-4 w-4 text-gray-400 transition-transform ${
                           openSections.paymentManagement ? "rotate-180" : ""
-                        }`}
-                      />
-                    </CollapsibleTrigger>
-                  </Collapsible>
-
-                  {/* 결제관리 */}
-                  <Collapsible
-                    open={openSections.memberInfoManagement}
-                    onOpenChange={() => toggleSection("memberInfoManagement")}
-                  >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <Settings className="h-5 w-5 text-gray-600" />
-                        <span>결제관리</span>
-                      </div>
-                      <ChevronDown
-                        className={`h-4 w-4 text-gray-400 transition-transform ${
-                          openSections.memberInfoManagement ? "rotate-180" : ""
                         }`}
                       />
                     </CollapsibleTrigger>
