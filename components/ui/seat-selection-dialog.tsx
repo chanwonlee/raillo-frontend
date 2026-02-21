@@ -85,8 +85,6 @@ export function SeatSelectionDialog({
   // 다이얼로그가 열릴 때마다 초기화
   useEffect(() => {
     if (isOpen && carList.length > 0) {
-      console.log('🔍 SeatSelectionDialog 초기화:', { selectedSeatType, carListLength: carList.length })
-      
       // 선택된 좌석 타입에 맞는 첫 번째 객차 선택
       const suitableCar = carList.find(car => {
         if (selectedSeatType === "reservedSeat") {
@@ -96,9 +94,7 @@ export function SeatSelectionDialog({
         }
         return true
       })
-      
-      console.log('🔍 suitableCar 찾기 결과:', { suitableCar: suitableCar?.carNumber, suitableCarType: suitableCar?.carType })
-      
+
       // 적절한 객차를 찾지 못한 경우, 좌석 타입에 맞는 객차만 필터링해서 첫 번째 선택
       if (!suitableCar) {
         const filteredCars = carList.filter(car => {
@@ -109,15 +105,11 @@ export function SeatSelectionDialog({
           }
           return true
         })
-        
-        console.log('🔍 filteredCars 결과:', { filteredCarsLength: filteredCars.length, firstCar: filteredCars[0]?.carNumber })
-        
+
         if (filteredCars.length > 0) {
-          console.log('🔍 setSelectedCar 호출 (filtered):', filteredCars[0].carNumber)
           setSelectedCar(filteredCars[0])
         }
       } else {
-        console.log('🔍 setSelectedCar 호출 (suitable):', suitableCar.carNumber)
         setSelectedCar(suitableCar)
       }
       
@@ -135,11 +127,9 @@ export function SeatSelectionDialog({
       
       // 같은 객차가 이미 선택된 경우 중복 호출 방지
       if (lastSelectedCarId.current === carId) {
-        console.log('🔍 중복 호출 방지:', carId)
         return
       }
       
-      console.log('🔍 selectedCar 변경됨, onCarSelect 호출:', selectedCar.carNumber)
       lastSelectedCarId.current = carId
       onCarSelectRef.current(carId)
     }

@@ -196,9 +196,10 @@ export default function ReservationPage() {
         successUrl: `${window.location.origin}/ticket/reservation/success`,
         failUrl: `${window.location.origin}/ticket/reservation/fail`,
       });
-    } catch (error: any) {
-      const errorCode = String(error?.code ?? "");
-      const errorMessage = String(error?.message ?? "");
+    } catch (error: unknown) {
+      const paymentError = error as { code?: string; message?: string };
+      const errorCode = String(paymentError.code ?? "");
+      const errorMessage = String(paymentError.message ?? "");
       const isUserCancel =
         errorCode === "USER_CANCEL" ||
         errorCode.includes("CANCEL") ||
@@ -242,7 +243,7 @@ export default function ReservationPage() {
           variant: "destructive",
         });
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       const errorMessage = handleError(e, "예약 취소 중 오류가 발생했습니다.", false);
       toast({
         title: "예약 취소 실패",
@@ -280,7 +281,7 @@ export default function ReservationPage() {
           variant: "destructive",
         });
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       const errorMessage = handleError(
         e,
         "장바구니 추가 중 오류가 발생했습니다.",

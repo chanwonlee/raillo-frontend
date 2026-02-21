@@ -13,7 +13,12 @@ export interface PendingBookingRequest {
 // 대기 예약 응답 타입
 export interface PendingBookingResponse {
   message?: string;
-  result?: any;
+  result?: {
+    reservationId?: number;
+    id?: number;
+    pendingBookingId?: string;
+    [key: string]: unknown;
+  };
 }
 
 // 대기 예약 좌석 정보 타입

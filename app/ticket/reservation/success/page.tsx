@@ -11,12 +11,13 @@ import Footer from "@/components/layout/Footer";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { PaymentConfirmResult } from "@/types/paymentsType";
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { mutateAsync: confirmPayment, isPending, isError, error } = usePostPaymentConfirm();
-  const [paymentResult, setPaymentResult] = useState<any>(null);
+  const [paymentResult, setPaymentResult] = useState<PaymentConfirmResult | null>(null);
   const [isConfirming, setIsConfirming] = useState(true);
 
   useEffect(() => {

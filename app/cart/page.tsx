@@ -118,7 +118,6 @@ export default function CartPage() {
       try {
         setLoading(true)
         const response = await getCart()
-        console.log('Cart response:', response)
         if (response.result && Array.isArray(response.result)) {
           const itemsWithSelection = response.result.map((item) => ({
             ...item,
