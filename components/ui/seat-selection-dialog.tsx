@@ -68,12 +68,19 @@ export function SeatSelectionDialog({
   onRefreshSeats,
 }: SeatSelectionDialogProps) {
   const [selectedCar, setSelectedCar] = useState<CarInfo | null>(null)
+  const [selectionError, setSelectionError] = useState<string | null>(null)
   const onCarSelectRef = useRef(onCarSelect)
   
   // onCarSelect 함수를 ref에 저장
   useEffect(() => {
     onCarSelectRef.current = onCarSelect
   }, [onCarSelect])
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectionError(null)
+    }
+  }, [isOpen])
   
   // 다이얼로그가 열릴 때마다 초기화
   useEffect(() => {
@@ -143,6 +150,7 @@ export function SeatSelectionDialog({
     const car = carList.find(c => c.id.toString() === carId)
     if (car) {
       setSelectedCar(car)
+      setSelectionError(null)
       // 객차 변경 시 선택된 좌석 초기화
       selectedSeats.forEach(seat => {
         onSeatClick(seat)
@@ -196,6 +204,7 @@ export function SeatSelectionDialog({
 
   const seatGrid = generateSeatGrid()
   const filteredCars = getFilteredCars()
+  const maxSeats = getTotalPassengers()
 
   // 좌석 버튼 스타일링 함수
   const getSeatButtonStyle = (seat: any, isSelected: boolean) => {
@@ -214,6 +223,24 @@ export function SeatSelectionDialog({
       return "bg-purple-100 border-purple-300 hover:bg-purple-200 text-gray-800"
     }
     return "bg-blue-100 border-blue-300 hover:bg-blue-200 text-gray-800"
+  }
+
+  const handleSeatSelectionClick = (
+    seat: SeatDetail,
+    seatNumber: string,
+    isSelected: boolean
+  ) => {
+    if (!seat.isAvailable) return
+
+    if (!isSelected && selectedSeats.length >= maxSeats) {
+      setSelectionError(
+        `승객 수는 ${maxSeats}명입니다. 좌석은 최대 ${maxSeats}개까지 선택할 수 있습니다.`
+      )
+      return
+    }
+
+    setSelectionError(null)
+    onSeatClick(seatNumber)
   }
 
   if (!isOpen || !selectedTrain) return null
@@ -353,16 +380,13 @@ export function SeatSelectionDialog({
                                 return (
                                   <button
                                     key={row}
-                                    onClick={() => {
-                                      if (!seat.isAvailable) return
-                                      
-                                      const maxSeats = getTotalPassengers()
-                                      if (!isSelected && selectedSeats.length >= maxSeats) {
-                                        alert(`최대 ${maxSeats}개의 좌석만 선택할 수 있습니다.`)
-                                        return
-                                      }
-                                      onSeatClick(seatNumber)
-                                    }}
+                                    onClick={() =>
+                                      handleSeatSelectionClick(
+                                        seat,
+                                        seatNumber,
+                                        isSelected
+                                      )
+                                    }
                                     disabled={!seat.isAvailable}
                                     className={`
                                       w-10 h-10 text-xs font-medium rounded border-2 transition-all duration-200 hover:scale-105
@@ -406,16 +430,13 @@ export function SeatSelectionDialog({
                                 return (
                                   <button
                                     key={row}
-                                    onClick={() => {
-                                      if (!seat.isAvailable) return
-                                      
-                                      const maxSeats = getTotalPassengers()
-                                      if (!isSelected && selectedSeats.length >= maxSeats) {
-                                        alert(`최대 ${maxSeats}개의 좌석만 선택할 수 있습니다.`)
-                                        return
-                                      }
-                                      onSeatClick(seatNumber)
-                                    }}
+                                    onClick={() =>
+                                      handleSeatSelectionClick(
+                                        seat,
+                                        seatNumber,
+                                        isSelected
+                                      )
+                                    }
                                     disabled={!seat.isAvailable}
                                     className={`
                                       w-10 h-10 text-xs font-medium rounded border-2 transition-all duration-200 hover:scale-105
@@ -463,16 +484,13 @@ export function SeatSelectionDialog({
                                   return (
                                     <button
                                       key={row}
-                                      onClick={() => {
-                                        if (!seat.isAvailable) return
-                                        
-                                        const maxSeats = getTotalPassengers()
-                                        if (!isSelected && selectedSeats.length >= maxSeats) {
-                                          alert(`최대 ${maxSeats}개의 좌석만 선택할 수 있습니다.`)
-                                          return
-                                        }
-                                        onSeatClick(seatNumber)
-                                      }}
+                                      onClick={() =>
+                                        handleSeatSelectionClick(
+                                          seat,
+                                          seatNumber,
+                                          isSelected
+                                        )
+                                      }
                                       disabled={!seat.isAvailable}
                                       className={`
                                         w-10 h-10 text-xs font-medium rounded border-2 transition-all duration-200 hover:scale-105
@@ -500,16 +518,13 @@ export function SeatSelectionDialog({
                                 return (
                                   <button
                                     key={row}
-                                    onClick={() => {
-                                      if (!seat.isAvailable) return
-                                      
-                                      const maxSeats = getTotalPassengers()
-                                      if (!isSelected && selectedSeats.length >= maxSeats) {
-                                        alert(`최대 ${maxSeats}개의 좌석만 선택할 수 있습니다.`)
-                                        return
-                                      }
-                                      onSeatClick(seatNumber)
-                                    }}
+                                    onClick={() =>
+                                      handleSeatSelectionClick(
+                                        seat,
+                                        seatNumber,
+                                        isSelected
+                                      )
+                                    }
                                     disabled={!seat.isAvailable}
                                     className={`
                                       w-10 h-10 text-xs font-medium rounded border-2 transition-all duration-200 hover:scale-105
@@ -553,16 +568,21 @@ export function SeatSelectionDialog({
 
         {/* Dialog Footer */}
         <div className="p-6 border-t bg-gray-50">
+          {selectionError && (
+            <p role="alert" className="mb-3 text-sm font-medium text-red-600">
+              {selectionError}
+            </p>
+          )}
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
               선택된 좌석: {selectedSeats.length > 0 ? selectedSeats.join(", ") : "없음"}
             </div>
             <Button
               onClick={() => onApply(selectedSeats, selectedCar ? parseInt(selectedCar.carNumber) : 1)}
-              disabled={selectedSeats.length !== getTotalPassengers()}
+              disabled={selectedSeats.length !== maxSeats}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg font-medium"
             >
-              선택적용 ({selectedSeats.length}명 좌석 선택/총 {getTotalPassengers()}명)
+              선택적용 ({selectedSeats.length}명 좌석 선택/총 {maxSeats}명)
             </Button>
           </div>
         </div>
