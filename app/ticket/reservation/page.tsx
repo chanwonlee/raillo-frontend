@@ -33,7 +33,7 @@ import {
   ChevronDown,
   CheckCircle,
 } from "lucide-react";
-import { deleteReservation, addToCart } from "@/lib/api/booking";
+import { deleteReservation } from "@/lib/api/booking";
 import { handleError } from "@/lib/utils/errorHandler";
 import {
   useGetPendingBookingList,
@@ -228,13 +228,16 @@ export default function ReservationPage() {
     setShowCancelDialog(false);
     try {
       if (selectedBooking) {
-        // 대기 예약 취소 API 호출 (필요시 구현)
-        // await deletePendingBooking(selectedBooking.pendingBookingId)
+        const response = await deleteReservation(selectedBooking.pendingBookingId);
+        const successMessage =
+          response.message ??
+          response.result?.message ??
+          "대기 예약이 취소되었습니다.";
+
         toast({
           title: "대기 예약 취소",
-          description: "대기 예약이 취소되었습니다.",
+          description: successMessage,
         });
-        // 리스트에서 제거된 항목을 다시 불러오기 위해 refetch 필요
         router.push("/");
       } else {
         toast({
