@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -10,15 +10,14 @@ interface UseAuthOptions {
 
 export function useAuth(options: UseAuthOptions = {}) {
   const { redirectTo = "/login", requireAuth = true, redirectPath } = options;
-  const { accessToken, tokenExpiresIn, initialize } = useAuthStore();
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { accessToken, tokenExpiresIn, isInitialized, initialize } = useAuthStore();
   const router = useRouter();
 
   const isAuthenticated =
     Boolean(accessToken) &&
     Boolean(tokenExpiresIn) &&
     Date.now() < (tokenExpiresIn ?? 0);
+  const isLoading = !isInitialized;
 
   const checkAuth = useCallback(() => {
     if (!isInitialized) {
@@ -35,26 +34,10 @@ export function useAuth(options: UseAuthOptions = {}) {
   }, [isInitialized, isAuthenticated, requireAuth, redirectTo, redirectPath, router]);
 
   useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        await initialize();
-      } finally {
-        if (!mounted) {
-          return;
-        }
-        setIsInitialized(true);
-        setIsLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    return () => {
-      mounted = false;
-    };
-  }, [initialize]);
+    if (!isInitialized) {
+      initialize();
+    }
+  }, [initialize, isInitialized]);
 
   useEffect(() => {
     checkAuth();

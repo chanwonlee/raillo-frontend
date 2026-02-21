@@ -5,8 +5,10 @@ import axios from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/__api";
 let refreshPromise: Promise<boolean> | null = null;
+let initializePromise: Promise<void> | null = null;
 
 interface AuthState {
+  isInitialized: boolean;
   isAuthenticated: boolean;
   accessToken: string | null;
   tokenExpiresIn: number | null;
@@ -22,6 +24,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
+      isInitialized: false,
       isAuthenticated: false,
       accessToken: null,
       tokenExpiresIn: null,
@@ -61,9 +64,10 @@ export const useAuthStore = create<AuthState>()(
 
         refreshPromise = (async () => {
           const reissueEndpoints = ["/auth/reissue", "/api/v1/auth/reissue"];
+          let lastError: unknown = null;
 
-          try {
-            for (const endpoint of reissueEndpoints) {
+          for (const endpoint of reissueEndpoints) {
+            try {
               const response = await axios.post<TokenReissueResponse>(
                 `${API_BASE_URL}${endpoint}`,
                 undefined,
@@ -87,36 +91,57 @@ export const useAuthStore = create<AuthState>()(
               if (response.status === 401 || response.status === 404) {
                 continue;
               }
+            } catch (error) {
+              lastError = error;
+              continue;
             }
-          } catch (error) {
-            if (axios.isAxiosError(error) && !error.response) {
-              console.warn("토큰 갱신 서버 연결 실패:", error.message);
+          }
+
+          if (lastError) {
+            if (axios.isAxiosError(lastError) && !lastError.response) {
+              console.warn("토큰 갱신 서버 연결 실패:", lastError.message);
             } else {
-              console.error("토큰 갱신 요청 실패:", error);
+              console.error("토큰 갱신 요청 실패:", lastError);
             }
-          } finally {
-            refreshPromise = null;
           }
 
           get().removeTokens();
           return false;
-        })();
+        })().finally(() => {
+          refreshPromise = null;
+        });
 
         return refreshPromise;
       },
 
       // 앱 초기화 시 토큰 상태 확인 및 갱신
       initialize: async () => {
-        if (get().hasValidToken()) {
-          set({ isAuthenticated: true });
+        if (get().isInitialized) {
           return;
         }
 
-        const refreshed = await get().refreshTokens();
-
-        if (!refreshed) {
-          get().removeTokens();
+        if (initializePromise) {
+          return initializePromise;
         }
+
+        initializePromise = (async () => {
+          if (get().hasValidToken()) {
+            set({ isAuthenticated: true, isInitialized: true });
+            return;
+          }
+
+          const refreshed = await get().refreshTokens();
+
+          if (!refreshed) {
+            get().removeTokens();
+          }
+
+          set({ isInitialized: true });
+        })().finally(() => {
+          initializePromise = null;
+        });
+
+        return initializePromise;
       },
     }),
     {
