@@ -205,6 +205,11 @@ async function apiRequest<T>(
 
 // HTTP 메서드별 함수들
 export const api = {
+    // 커스텀 요청 (헤더/옵션 오버라이드 필요 시 사용)
+    request: <T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> => {
+        return apiRequest<T>(endpoint, options);
+    },
+
     // GET 요청
     get: <T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> => {
         const baseUrl = typeof window !== "undefined" ? window.location.origin : API_BASE_URL;

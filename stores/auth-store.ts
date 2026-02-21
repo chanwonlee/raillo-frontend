@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { TokenReissueResponse } from "@/types/authType";
-import axios from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/__api";
 let refreshPromise: Promise<boolean> | null = null;
@@ -68,21 +67,20 @@ export const useAuthStore = create<AuthState>()(
 
           for (const endpoint of reissueEndpoints) {
             try {
-              const response = await axios.post<TokenReissueResponse>(
-                `${API_BASE_URL}${endpoint}`,
-                undefined,
-                {
-                  withCredentials: true,
-                  validateStatus: (status) => status >= 200 && status < 500,
-                }
-              );
+              const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              });
 
-              if (
-                response.status >= 200 &&
-                response.status < 300 &&
-                response.data?.result
-              ) {
-                const { accessToken, accessTokenExpiresIn } = response.data.result;
+              if (response.status >= 200 && response.status < 300) {
+                const data = (await response.json()) as TokenReissueResponse;
+                if (!data?.result) {
+                  continue;
+                }
+                const { accessToken, accessTokenExpiresIn } = data.result;
                 const expiresIn = Date.now() + accessTokenExpiresIn * 1000;
                 get().setTokens(accessToken, expiresIn);
                 return true;
@@ -98,11 +96,8 @@ export const useAuthStore = create<AuthState>()(
           }
 
           if (lastError) {
-            if (axios.isAxiosError(lastError) && !lastError.response) {
-              console.warn("토큰 갱신 서버 연결 실패:", lastError.message);
-            } else {
-              console.error("토큰 갱신 요청 실패:", lastError);
-            }
+            const message = lastError instanceof Error ? lastError.message : String(lastError);
+            console.warn("토큰 갱신 서버 연결 실패:", message);
           }
 
           get().removeTokens();

@@ -109,30 +109,14 @@ export const authAPI = {
 
     // 비밀번호 변경 (임시 토큰 사용)
     changePassword: async (requestData: ChangePasswordRequest, temporaryToken: string): Promise<ApiResponse> => {
-        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/members/password`;
-        
-        const response = await fetch(url, {
+        return api.request('/members/password', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${temporaryToken}`,
             },
-            credentials: 'include', // HttpOnly 쿠키 포함
             body: JSON.stringify(requestData),
         });
-
-        if (response.status === 204) {
-            return {} as ApiResponse;
-        }
-
-        const text = await response.text();
-        const responseData = text ? JSON.parse(text) : {};
-
-        if (!response.ok) {
-            throw new Error(responseData.message || '비밀번호 변경에 실패했습니다.');
-        }
-
-        return responseData as ApiResponse;
     },
 };
 
