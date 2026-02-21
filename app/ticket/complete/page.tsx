@@ -7,6 +7,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import {Badge} from "@/components/ui/badge"
 import {Separator} from "@/components/ui/separator"
 import {Calendar, CheckCircle, Clock, CreditCard, Download, Home, List, Train, User, ArrowRight, ArrowLeft} from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 interface RoundtripCompleteData {
   departureStation: string
@@ -26,6 +27,7 @@ interface RoundtripCompleteData {
 export default function PaymentCompletePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { isAuthenticated, isChecking } = useAuth({ redirectPath: "/ticket/complete" })
   const [reservationNumber] = useState("R" + Date.now().toString().slice(-8))
   const [isRoundtrip, setIsRoundtrip] = useState(false)
   const [roundtripData, setRoundtripData] = useState<RoundtripCompleteData | null>(null)
@@ -79,6 +81,20 @@ export default function PaymentCompletePage() {
   const getSelectedInboundTrain = () => {
     if (!roundtripData) return null
     return roundtripData.inboundTrains.find(train => train.id === roundtripData.selectedInbound)
+  }
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-2xl mx-auto px-4 text-center text-gray-600">
+          로그인 상태를 확인하고 있습니다...
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null
   }
 
   return (

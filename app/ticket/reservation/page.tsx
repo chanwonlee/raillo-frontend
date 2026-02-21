@@ -41,10 +41,12 @@ import {
 } from "@/hooks/usePendingBooking";
 import { usePostPaymentPrepare } from "@/hooks/usePayment";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function ReservationPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isAuthenticated, isChecking } = useAuth({ redirectPath: "/ticket/reservation" });
   const {
     data,
     isLoading,
@@ -91,6 +93,10 @@ export default function ReservationPage() {
 
   // 토스 페이먼츠 위젯 초기화
   useEffect(() => {
+    if (isChecking || !isAuthenticated) {
+      return;
+    }
+
     const initPaymentWidget = async () => {
       try {
         // TODO: 실제 클라이언트 키로 변경 필요
@@ -105,10 +111,14 @@ export default function ReservationPage() {
     };
 
     initPaymentWidget();
-  }, []);
+  }, [isAuthenticated, isChecking]);
 
   // 결제 수단 선택 UI 렌더링
   useEffect(() => {
+    if (isChecking || !isAuthenticated) {
+      return;
+    }
+
     if (!showPaymentWidget || !paymentWidgetRef.current || !paymentInfo) return;
 
     const renderPaymentMethods = async () => {
@@ -131,7 +141,7 @@ export default function ReservationPage() {
         paymentMethodsWidgetRef.current = null;
       }
     };
-  }, [showPaymentWidget, paymentInfo]);
+  }, [isAuthenticated, isChecking, showPaymentWidget, paymentInfo]);
 
   // 예약하기 버튼 클릭 핸들러 - 결제 준비 API 호출 후 결제 수단 선택 UI 표시
   const handleReservation = async () => {
@@ -351,6 +361,18 @@ export default function ReservationPage() {
   const formatTime = (timeString: string) => {
     return timeString.substring(0, 5); // "HH:mm" 형식으로 변환
   };
+
+  if (isChecking) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <p className="text-gray-600">로그인 상태를 확인하고 있습니다...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const loading = isLoading;
   const error = queryError?.message || null;

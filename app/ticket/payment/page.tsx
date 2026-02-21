@@ -272,8 +272,10 @@ export default function PaymentPage() {
         alert(`결제가 완료되었습니다!\n결제번호: ${result.paymentKey}`)
         router.push("/ticket/purchased")
       }
-    } catch (error) {
-      console.error('Payment error:', error)
+    } catch (error: unknown) {
+      const errorMessage = handleError(error, '결제 처리 중 오류가 발생했습니다.', false)
+      setError(errorMessage)
+      alert(errorMessage)
     } finally {
       setIsProcessing(false)
     }
