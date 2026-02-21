@@ -14,8 +14,6 @@ import {
   Search,
   ArrowLeftRight,
 } from "lucide-react"
-import Header from "@/components/layout/Header/Header"
-import Footer from "@/components/layout/Footer"
 import { StationSelector } from "@/components/ui/station-selector"
 import { DateTimeSelector } from "@/components/ui/date-time-selector"
 import { PassengerSelector } from "@/components/ui/passenger-selector"
@@ -171,8 +169,6 @@ export default function TicketBookingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <Header />
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -343,8 +339,6 @@ export default function TicketBookingPage() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   )
 }

@@ -10,8 +10,6 @@ import { Badge } from "@/components/ui/badge"
 import { MapPin, Clock, ArrowRight, X, AlertTriangle, Info, CreditCard, ShoppingCart } from "lucide-react"
 import { format } from "date-fns"
 import { ko } from "date-fns/locale"
-import Header from "@/components/layout/Header/Header"
-import Footer from "@/components/layout/Footer"
 import { getReservationList, deleteReservation, addToCart, ReservationDetailResponse } from '@/lib/api/booking'
 import { handleError } from '@/lib/utils/errorHandler'
 import {
@@ -162,53 +160,38 @@ export default function ReservationsPage() {
   // 로그인 상태 확인 중이거나 인증되지 않은 경우 로딩 표시
   if (isChecking || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-        <Header />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">인증을 확인하고 있습니다...</p>
-        </div>
-        <Footer />
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">인증을 확인하고 있습니다...</p>
       </div>
     )
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-        <Header />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">예약 목록을 불러오고 있습니다...</p>
-        </div>
-        <Footer />
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">예약 목록을 불러오고 있습니다...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-        <Header />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="text-red-600 mb-4">
-            <p className="text-lg font-semibold">예약 목록을 불러올 수 없습니다</p>
-            <p className="text-sm">{error}</p>
-          </div>
-          <Button onClick={() => router.push('/')} variant="outline">
-            홈으로 돌아가기
-          </Button>
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="text-red-600 mb-4">
+          <p className="text-lg font-semibold">예약 목록을 불러올 수 없습니다</p>
+          <p className="text-sm">{error}</p>
         </div>
-        <Footer />
+        <Button onClick={() => router.push('/')} variant="outline">
+          홈으로 돌아가기
+        </Button>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header */}
-      <Header />
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -422,9 +405,6 @@ export default function ReservationsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Footer */}
-      <Footer />
     </div>
   )
 }

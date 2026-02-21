@@ -38,8 +38,6 @@ import {
   MapPin,
   Clock,
 } from "lucide-react"
-import Header from "@/components/layout/Header/Header"
-import Footer from "@/components/layout/Footer"
 import { getCart, deleteReservation } from '@/lib/api/booking'
 import { processPaymentViaCard, processPaymentViaBankAccount } from '@/lib/api/payment'
 import { handleError } from '@/lib/utils/errorHandler'
@@ -337,13 +335,9 @@ export default function CartPage() {
   // 로그인 상태 확인 중
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
-        <Header />
-        <div className="container mx-auto px-4 py-16 text-center flex-1">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">로그인 상태를 확인하고 있습니다...</p>
-        </div>
-        <Footer />
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">로그인 상태를 확인하고 있습니다...</p>
       </div>
     )
   }
@@ -355,41 +349,31 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
-        <Header />
-        <div className="container mx-auto px-4 py-16 text-center flex-1">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">장바구니를 불러오고 있습니다...</p>
-        </div>
-        <Footer />
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">장바구니를 불러오고 있습니다...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
-        <Header />
-        <div className="container mx-auto px-4 py-16 text-center flex-1">
-          <div className="text-red-600 mb-4">
-            <p className="text-lg font-semibold">장바구니를 불러올 수 없습니다</p>
-            <p className="text-sm">{error}</p>
-          </div>
-          <Button onClick={() => router.push('/')} variant="outline">
-            홈으로 돌아가기
-          </Button>
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="text-red-600 mb-4">
+          <p className="text-lg font-semibold">장바구니를 불러올 수 없습니다</p>
+          <p className="text-sm">{error}</p>
         </div>
-        <Footer />
+        <Button onClick={() => router.push('/')} variant="outline">
+          홈으로 돌아가기
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
-      <Header />
-
+    <div>
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 flex-1">
+      <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Page Title */}
           <div className="text-center mb-8">
@@ -854,8 +838,6 @@ export default function CartPage() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <Footer />
     </div>
   )
 }
