@@ -187,7 +187,6 @@ export function DateTimeSelector({
     const year = tempDate.getFullYear();
     const month = tempDate.getMonth();
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
 
@@ -238,13 +237,15 @@ export function DateTimeSelector({
             p-2 text-sm transition-colors relative h-9
             ${
               isCurrentMonth
-                ? isSelectable
-                  ? isSelected
-                    ? "bg-blue-600 text-white font-semibold"
-                    : isToday
-                    ? "bg-blue-100 text-blue-600 font-semibold hover:bg-blue-200"
-                    : isHoliday
+                ? isSelected
+                  ? "bg-blue-600 text-white font-semibold"
+                  : isHoliday
+                  ? isSelectable
                     ? "text-red-500 hover:bg-red-50"
+                    : "text-red-300 cursor-not-allowed"
+                  : isSelectable
+                  ? isToday
+                    ? "bg-blue-100 text-blue-600 font-semibold hover:bg-blue-200"
                     : isWeekend
                     ? currentDate.getDay() === 0
                       ? "text-red-500 hover:bg-red-50"
@@ -256,9 +257,6 @@ export function DateTimeSelector({
           `}
         >
           {currentDate.getDate()}
-          {isHoliday && (
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          )}
         </button>
       );
     }
@@ -440,10 +438,12 @@ export function DateTimeSelector({
                       setSelectedHour("00시");
                     }
                   }}
-                  disabled={isBefore(
-                    maxAvailableDate,
-                    new Date(tempDate.getFullYear(), tempDate.getMonth() + 1, 1)
-                  )}
+                  disabled={
+                    isBefore(
+                      maxAvailableDate,
+                      new Date(tempDate.getFullYear(), tempDate.getMonth() + 1, 1)
+                    )
+                  }
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
