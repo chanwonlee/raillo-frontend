@@ -2,12 +2,17 @@ import { useAuthStore } from "@/stores/auth-store";
 
 // API 기본 설정
 const DIRECT_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-const API_BASE_URL = DIRECT_API_BASE_URL || (typeof window !== "undefined" ? "/__api" : undefined);
+const resolveApiBaseUrl = (): string => {
+    if (DIRECT_API_BASE_URL) {
+        return DIRECT_API_BASE_URL;
+    }
 
-// 환경 변수 체크
-if (!API_BASE_URL) {
-    throw new Error('NEXT_PUBLIC_API_BASE_URL 환경 변수가 설정되지 않았습니다.');
-}
+    if (typeof window !== "undefined") {
+        return "/__api";
+    }
+
+    return "";
+};
 
 // API 응답 타입 정의
 export interface ApiResponse<T = any> {
@@ -70,7 +75,12 @@ async function apiRequest<T>(
     options: RequestInit = {},
     retryCount: number = 0
 ): Promise<ApiResponse<T>> {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const apiBaseUrl = resolveApiBaseUrl();
+    if (!apiBaseUrl) {
+        throw new Error("NEXT_PUBLIC_API_BASE_URL 환경 변수가 설정되지 않았습니다.");
+    }
+
+    const url = `${apiBaseUrl}${endpoint}`;
     const startTime = new Date();
 
     const config: RequestInit = {
@@ -187,8 +197,8 @@ export const api = {
 
     // GET 요청
     get: <T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> => {
-        const baseUrl = typeof window !== "undefined" ? window.location.origin : API_BASE_URL;
-        const url = new URL(`${API_BASE_URL}${endpoint}`, baseUrl);
+        const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+        const url = new URL(normalizedEndpoint, "http://localhost");
         if (params) {
             Object.entries(params).forEach(([key, value]) => {
                 if (value !== undefined && value !== null) {
