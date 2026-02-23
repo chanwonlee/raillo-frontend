@@ -180,10 +180,6 @@ async function apiRequest<T>(
                 0
             );
         }
-
-        if (process.env.NODE_ENV === "development") {
-            console.error('💥 API Error:', logPayload);
-        }
         throw error;
     }
 }
